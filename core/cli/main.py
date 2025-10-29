@@ -1,6 +1,6 @@
-"""Main CLI entrypoint for Jobhunter.
+"""Main CLI entrypoint for Pulpo framework.
 
-Auto-generates commands from OperationRegistry.
+Provides both programmatic (CLI class) and Typer-based CLI interfaces.
 """
 
 import sys
@@ -8,16 +8,28 @@ import sys
 import typer
 from rich.console import Console
 
-from core.cli.commands import lint, ops
+from ..cli_interface import CLI
+from .commands import lint, ops
 
 app = typer.Typer(
-    name="jobhunter",
-    help="JobHunter AI - Automated Job Application Platform",
+    name="pulpo",
+    help="Pulpo Core Framework - Auto-generate APIs, UIs, and Orchestration from decorators",
     no_args_is_help=True,
     add_completion=True,
 )
 
 console = Console()
+
+# Global CLI instance for Typer commands
+_cli_instance: CLI | None = None
+
+
+def get_cli() -> CLI:
+    """Get or create the global CLI instance."""
+    global _cli_instance
+    if _cli_instance is None:
+        _cli_instance = CLI(verbose=False)
+    return _cli_instance
 
 
 # Register command groups
@@ -28,9 +40,88 @@ app.add_typer(lint.lint_app, name="lint", help="Lint datamodels and operations")
 @app.command()
 def version():
     """Show version information."""
-    from core.cli import __version__
+    cli = get_cli()
+    versions = cli.check_version()
+    console.print(f"[bold blue]Pulpo Framework[/bold blue] version {versions['framework']}")
+    console.print(f"[dim]Python {versions['python']}[/dim]")
 
-    console.print(f"[bold blue]JobHunter CLI[/bold blue] version {__version__}")
+
+@app.command()
+def status():
+    """Show current project status."""
+    cli = get_cli()
+    summary = cli.summary()
+    console.print(summary)
+
+
+@app.command()
+def models():
+    """List registered models."""
+    cli = get_cli()
+    models_list = cli.list_models()
+
+    if not models_list:
+        console.print("[yellow]No models registered[/yellow]")
+        return
+
+    table = typer.echo
+    console.print("[bold]Registered Models:[/bold]")
+    for model_name in models_list:
+        info = cli.inspect_model(model_name)
+        console.print(f"  [cyan]{model_name}[/cyan]")
+        if info.get("description"):
+            console.print(f"    {info['description']}")
+
+
+@app.command()
+def graph():
+    """Generate relationship graphs."""
+    cli = get_cli()
+    console.print("[cyan]Generating graphs...[/cyan]")
+    graphs_dir = cli.draw_graphs()
+    console.print(f"[green]✓[/green] Generated graphs in {graphs_dir}")
+
+
+@app.command()
+def flows():
+    """Generate operation flow diagrams."""
+    cli = get_cli()
+    console.print("[cyan]Generating operation flows...[/cyan]")
+    flows_dir = cli.draw_operationflow()
+    console.print(f"[green]✓[/green] Generated flows in {flows_dir}")
+
+
+@app.command()
+def docs():
+    """Generate documentation."""
+    cli = get_cli()
+    console.print("[cyan]Generating documentation...[/cyan]")
+    docs_dir = cli.docs()
+    console.print(f"[green]✓[/green] Generated docs in {docs_dir}")
+
+
+@app.command()
+def compile():
+    """Compile all artifacts to run_cache."""
+    cli = get_cli()
+    console.print("[cyan]Compiling...[/cyan]")
+    cache_dir = cli.compile()
+    console.print(f"[green]✓[/green] Compiled to {cache_dir}")
+
+
+@app.command()
+def api(
+    host: str = typer.Option("0.0.0.0", help="Host to bind to"),
+    port: int = typer.Option(8000, help="Port to bind to"),
+):
+    """Start FastAPI server."""
+    cli = get_cli()
+    console.print(f"[cyan]Starting API on {host}:{port}...[/cyan]")
+    try:
+        cli.api(host=host, port=port)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -38,72 +129,42 @@ def init(
     db_host: str = typer.Option("localhost", help="Database host"),
     db_port: int = typer.Option(27017, help="Database port"),
 ):
-    """Initialize Jobhunter configuration."""
-    console.print("[yellow]Initializing Jobhunter...[/yellow]")
-
-    # Create .env file if it doesn't exist
-    from pathlib import Path
-
-    env_path = Path(".env")
-    if env_path.exists():
-        console.print("[red]Error: .env file already exists[/red]")
+    """Initialize database and services."""
+    cli = get_cli()
+    console.print("[cyan]Initializing services...[/cyan]")
+    try:
+        cli.init()
+        console.print("[green]✓[/green] Services initialized")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
-
-    env_content = f"""# JobHunter Configuration
-
-# Database (MongoDB only)
-MONGODB_URI=mongodb://{db_host}:{db_port}
-MONGODB_DATABASE=jobhunter
-
-# OpenAI (optional)
-OPENAI_API_KEY=
-
-# Anthropic (optional)
-ANTHROPIC_API_KEY=
-
-# Logging
-LOG_LEVEL=INFO
-"""
-
-    env_path.write_text(env_content)
-    console.print("[green]✓[/green] Created .env file")
-    console.print("[green]✓[/green] Jobhunter initialized successfully!")
-    console.print("\n[yellow]Next steps:[/yellow]")
-    console.print("1. Edit .env to add your API keys")
-    console.print("2. Run 'jobhunter ops list' to see available operations")
 
 
 @app.command()
 def ui(
     port: int = typer.Option(3000, help="Port to run UI on"),
-    dev: bool = typer.Option(False, help="Run in development mode"),
 ):
-    """Launch the web UI (frontend)."""
+    """Launch the web UI."""
     import os
     from pathlib import Path
 
-    frontend_dir = Path(__file__).parent.parent.parent / "frontend" / "jobhunter-ui"
+    frontend_dir = Path(__file__).parent.parent.parent / "frontend_template"
 
     if not frontend_dir.exists():
         console.print("[red]Error: Frontend directory not found[/red]")
         console.print(f"Expected at: {frontend_dir}")
         raise typer.Exit(1)
 
-    console.print(f"[yellow]Starting web UI on port {port}...[/yellow]")
+    console.print(f"[cyan]Starting web UI on port {port}...[/cyan]")
 
-    if dev:
-        # Development mode: run npm start
-        os.chdir(frontend_dir)
-        os.system("npm start")
-    else:
-        # Production mode: serve build
-        build_dir = frontend_dir / "build"
-        if not build_dir.exists():
-            console.print("[red]Error: Build directory not found. Run 'npm run build' first.[/red]")
-            raise typer.Exit(1)
-
-        # Simple HTTP server
+    # Simple HTTP server
+    build_dir = frontend_dir / "build"
+    if build_dir.exists():
         os.chdir(build_dir)
+        os.system(f"python -m http.server {port}")
+    else:
+        console.print("[yellow]Frontend not built. Serve frontend_template directory:[/yellow]")
+        os.chdir(frontend_dir)
         os.system(f"python -m http.server {port}")
 
 

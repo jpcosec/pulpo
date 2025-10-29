@@ -6,7 +6,7 @@ This module provides database initialization and connection management for Mongo
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from core.utils.config import get_settings
+from .utils.config import get_settings
 
 # Global database instance
 _database_client: AsyncIOMotorClient | None = None

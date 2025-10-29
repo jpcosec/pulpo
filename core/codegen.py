@@ -18,9 +18,9 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
-from core.config_manager import ConfigManager
-from core.graph_generator import MermaidGraphGenerator
-from core.registries import ModelRegistry, OperationRegistry
+from .config_manager import ConfigManager
+from .graph_generator import MermaidGraphGenerator
+from .registries import ModelRegistry, OperationRegistry
 
 
 class CodeGenerator:

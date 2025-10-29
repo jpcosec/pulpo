@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from core.registries import ModelRegistry, OperationRegistry
+from .registries import ModelRegistry, OperationRegistry
 
 
 @dataclass
