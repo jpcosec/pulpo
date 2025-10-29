@@ -1,0 +1,20 @@
+version: '3.8'
+
+# Development overrides for hot reload
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    volumes:
+      # Mount source code for hot reload
+      - ../src:/app/src
+      - ../.run_cache:/app/.run_cache
+      # Mount operations for hot reload
+      - ../src/operations:/app/src/operations
+      # Mount models for hot reload
+      - ../src/database:/app/src/database

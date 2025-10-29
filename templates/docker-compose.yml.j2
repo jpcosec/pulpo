@@ -1,0 +1,115 @@
+# Auto-generated Docker Compose configuration for {{ project_name }}
+# Generated from: core/templates/docker-compose.yml.j2
+# To modify ports or services, edit .jobhunter.yml and re-run: make init
+
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: {{ project_name }}-mongodb
+    ports:
+      - "{{ mongodb_port }}:27017"
+    environment:
+      MONGO_INITDB_DATABASE: {{ project_name }}
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - {{ project_name }}-mongo-data:/data/db
+    networks:
+      - {{ project_name }}-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: {{ project_name }}-api
+    ports:
+      - "{{ api_port }}:8000"
+    environment:
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/{{ project_name }}
+      MONGODB_DATABASE: {{ project_name }}
+      PROJECT_NAME: {{ project_name }}
+      IMAGE_VERSION: ${IMAGE_VERSION:-latest}
+    volumes:
+      - ./{{ run_cache_dir }}/generated_api:/app/generated_api
+      - ./models:/app/models
+      - ./operations:/app/operations
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - {{ project_name }}-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # React + Refine.dev UI
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: {{ project_name }}-ui
+    ports:
+      - "{{ ui_port }}:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:{{ api_port }}
+      PROJECT_NAME: {{ project_name }}
+    volumes:
+      - ./{{ run_cache_dir }}/generated_frontend:/app/src/generated
+    depends_on:
+      - api
+    networks:
+      - {{ project_name }}-network
+
+  # Prefect Server (Orchestration)
+  # Uncomment to enable Prefect workflow orchestration
+  # prefect-server:
+  #   image: prefecthq/prefect:3-latest
+  #   container_name: {{ project_name }}-prefect-server
+  #   ports:
+  #     - "{{ prefect_server_port }}:4200"
+  #   environment:
+  #     PREFECT_HOME: /root/.prefect
+  #     PREFECT_API_URL: http://prefect-server:4200/api
+  #   volumes:
+  #     - {{ project_name }}-prefect-data:/root/.prefect
+  #   networks:
+  #     - {{ project_name }}-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:4200/api/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Prefect Worker (Orchestration)
+  # Uncomment to enable Prefect workflow execution
+  # prefect-worker:
+  #   image: prefecthq/prefect:3-latest
+  #   container_name: {{ project_name }}-prefect-worker
+  #   environment:
+  #     PREFECT_API_URL: http://prefect-server:4200/api
+  #     PREFECT_WORKER_PROCESS_LIMIT: 5
+  #   command: prefect worker start -p default-agent-pool -t process
+  #   depends_on:
+  #     - prefect-server
+  #   networks:
+  #     - {{ project_name }}-network
+
+networks:
+  {{ project_name }}-network:
+    driver: bridge
+
+volumes:
+  {{ project_name }}-mongo-data:
+  # Uncomment if using Prefect
+  # {{ project_name }}-prefect-data:

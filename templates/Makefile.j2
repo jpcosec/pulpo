@@ -1,0 +1,65 @@
+# Local Project Makefile - {{ project_name }}
+# Auto-generated from: core/templates/Makefile.j2
+#
+# This Makefile forwards all commands to the core framework Makefile.
+# The core framework is located at: {{ core_path }}
+#
+# To customize this project, edit .jobhunter.yml
+
+.PHONY: help build up down restart logs clean rebuild status health shell api-shell db-shell test lint check-models format type-check test-unit compile discover discover-models discover-operations init-project setup-project codegen demo ui-install ui-dev ui-build ui-test ui-lint test-integration test-e2e test-all test-coverage db-init db-seed db-backup db-restore prefect-server prefect-worker prefect-ui prefect-logs prefect-stop
+
+# Core framework location
+CORE_DIR := {{ core_path }}
+
+# Project configuration (read from .jobhunter.yml)
+CONFIG_FILE := .
+
+# Forward all targets to core Makefile
+%:
+	@$(MAKE) -C $(CORE_DIR) $@ CONFIG_FILE=$(CONFIG_FILE)
+
+help:
+	@echo "╔════════════════════════════════════════════════════════════════╗"
+	@echo "║          {{ project_name }} - Local Project Commands               ║"
+	@echo "╚════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "This is a local project in {{ project_path }}"
+	@echo "Configuration: .jobhunter.yml"
+	@echo ""
+	@echo "🔍 Discovery & Validation:"
+	@echo "  make discover           - Show models/operations to be discovered"
+	@echo "  make discover-models    - Show datamodels only"
+	@echo "  make discover-operations- Show operations only"
+	@echo ""
+	@echo "🔨 Build & Compile:"
+	@echo "  make compile            - Generate code from @datamodel/@operation"
+	@echo "  make build              - Build Docker images"
+	@echo "  make build VERSION=v1.0 - Build with specific version"
+	@echo ""
+	@echo "🚀 Services:"
+	@echo "  make up                 - Start services"
+	@echo "  make down               - Stop services"
+	@echo "  make restart            - Restart services"
+	@echo "  make logs               - Show service logs"
+	@echo "  make status             - Show container status"
+	@echo "  make health             - Check service health"
+	@echo ""
+	@echo "📚 Access URLs:"
+	@echo "  API Docs:    http://localhost:{{ api_port }}/docs"
+	@echo "  API Health:  http://localhost:{{ api_port }}/health"
+	@echo "  UI:          http://localhost:{{ ui_port }}"
+	@echo "  MongoDB:     localhost:{{ mongodb_port }}"
+	@echo ""
+	@echo "🛠️  Utilities:"
+	@echo "  make shell              - Open shell in API container"
+	@echo "  make db-shell           - Open MongoDB shell"
+	@echo "  make lint               - Run code quality checks"
+	@echo "  make format             - Auto-format code"
+	@echo "  make test               - Run tests"
+	@echo ""
+	@echo "🧹 Cleanup:"
+	@echo "  make clean              - Remove containers and volumes"
+	@echo "  make clean-cache        - Remove generated code only"
+	@echo ""
+	@echo "📖 For more help: make -C $(CORE_DIR) help"
+	@echo ""

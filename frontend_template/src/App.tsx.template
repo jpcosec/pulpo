@@ -1,0 +1,65 @@
+import { Refine } from "@refinedev/core";
+import { RefineThemes, ThemedLayoutV2, notificationProvider } from "@refinedev/antd";
+import routerProvider from "@refinedev/react-router-v6";
+import dataProvider from "@refinedev/simple-rest";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ConfigProvider } from "antd";
+
+// Import generated config
+import { RESOURCES } from "./config/generated";
+
+// AUTO-GENERATED IMPORTS - DO NOT EDIT
+// The following imports are generated from @datamodel decorators
+{%IMPORTS%}
+
+import "@refinedev/antd/dist/reset.css";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <ConfigProvider theme={RefineThemes.Blue}>
+        <Refine
+          routerProvider={routerProvider}
+          dataProvider={dataProvider(API_URL)}
+          notificationProvider={notificationProvider}
+          resources={RESOURCES}
+          options={{
+            syncWithLocation: true,
+            warnWhenUnsavedChanges: true,
+          }}
+        >
+          <Routes>
+            <Route
+              element={
+                <ThemedLayoutV2
+                  Title={({ collapsed }) => (
+                    <div style={{ padding: "12px 24px" }}>
+                      {collapsed ? "JH" : "🚀 JobHunter AI"}
+                    </div>
+                  )}
+                >
+                  <div style={{ padding: "24px" }}>
+                    <h1>Auto-Generated UI from @datamodel Decorators</h1>
+                    <p>
+                      This interface is automatically generated from your Python models.
+                      All CRUD operations are created from metadata - no manual coding required!
+                    </p>
+                  </div>
+                </ThemedLayoutV2>
+              }
+              path="/"
+            />
+
+            {/* AUTO-GENERATED ROUTES - DO NOT EDIT */}
+            {/* The following routes are generated from @datamodel decorators */}
+{%ROUTES%}
+          </Routes>
+        </Refine>
+      </ConfigProvider>
+    </BrowserRouter>
+  );
+}
+
+export default App;
