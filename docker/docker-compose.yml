@@ -9,7 +9,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ${PROJECT_NAME}-mongo-data:/data/db
+      - mongo-data:/data/db
     environment:
       - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
     healthcheck:
@@ -97,7 +97,7 @@ services:
     command: prefect worker start --pool default
 
 volumes:
-  ${PROJECT_NAME}-mongo-data:
+  mongo-data:
     name: ${PROJECT_NAME}-mongo-data
   prefect-data:
     name: ${PROJECT_NAME}-prefect-data
