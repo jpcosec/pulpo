@@ -1,4 +1,4 @@
-"""Configuration management for JobHunter projects.
+"""Configuration management for Pulpo Core projects.
 
 Handles YAML config file parsing, validation, port management, and detection
 of corrupted configs or containers.
@@ -19,7 +19,7 @@ except ImportError:
 class ConfigManager:
     """Manage project configuration and port allocation."""
 
-    DEFAULT_CONFIG_NAME = ".jobhunter.yml"
+    DEFAULT_CONFIG_NAME = ".pulpo.yml"
     DEFAULT_PORT_BASE = 10010
 
     # Port offset mapping
@@ -37,7 +37,7 @@ class ConfigManager:
         """Initialize config manager.
 
         Args:
-            config_path: Path to .jobhunter.yml. If None, looks in pwd.
+            config_path: Path to .pulpo.yml. If None, looks in pwd.
             project_root: Root directory for relative paths. Defaults to config directory.
         """
         if config_path is None:

@@ -1,12 +1,12 @@
-# JobHunter AI - Makefile
-# Easy setup and management of Docker environment
+# Pulpo Core - Makefile
+# Framework for metadata-driven code generation and orchestration
 
 .PHONY: help build up down restart logs clean rebuild status health shell api-shell db-shell test lint lint-models check-models format type-check test-unit compile preload warmup discover discover-models discover-operations setup-project init-project codegen demo ui-install ui-dev ui-build ui-test ui-lint test-integration test-e2e test-all test-coverage db-init db-seed db-backup db-restore prefect-server prefect-worker prefect-ui prefect-logs prefect-stop
 
 # Core directory location
 CORE_DIR := $(shell cd $(dir $(lastword $(MAKEFILE_LIST))) && pwd)
 
-# Config file for discovery paths (defaults to .jobhunter.yml in parent directory)
+# Config file for discovery paths (defaults to project config in parent directory)
 CONFIG_FILE ?= ..
 
 # =============================================================================
@@ -14,7 +14,7 @@ CONFIG_FILE ?= ..
 # =============================================================================
 help:
 	@echo "╔════════════════════════════════════════════════════════════════╗"
-	@echo "║              JobHunter AI - Docker Management                  ║"
+	@echo "║         Pulpo Core - Code Generation & Orchestration           ║"
 	@echo "╚════════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "📦 Project Setup:"
@@ -186,7 +186,7 @@ init-project: init
 	@true
 
 init:
-	@echo "🎯 Initializing new JobHunter project in pwd..."
+	@echo "🎯 Initializing new Pulpo Core project in pwd..."
 	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH python3 $(CORE_DIR)/scripts/init_project.py $(PROJECT_NAME) 2>&1
 
 setup-project:
@@ -210,27 +210,19 @@ discover-operations:
 # Demo Project
 # =============================================================================
 demo:
-	@echo "📦 Unpacking demo project (Pokemon example)..."
+	@echo "📦 Unpacking demo project..."
 	@cd .. && tar -xzf core/core/demo-project.tar.gz
 	@echo "✅ Demo project unpacked!"
 	@echo ""
 	@echo "⚙️  Generating configuration..."
-	@cd ../test-project-demo && python3 -c "import yaml; config = {'project_name': 'test-project-demo', 'version': '1.0', 'port_base': 10010, 'ports': {'api': 10010, 'ui': 10011, 'mongodb': 10012, 'prefect_server': 10013, 'prefect_ui': 10014}, 'discovery': {'models_dirs': ['models'], 'operations_dirs': ['operations']}, 'docker': {'image_version': 'latest', 'base_image': 'test-project-demo'}}; open('.jobhunter.yml', 'w').write(yaml.dump(config, default_flow_style=False))"
+	@cd ../test-project-demo && python3 -c "import yaml; config = {'project_name': 'test-project-demo', 'version': '1.0', 'port_base': 10010, 'ports': {'api': 10010, 'ui': 10011, 'mongodb': 10012, 'prefect_server': 10013, 'prefect_ui': 10014}, 'discovery': {'models_dirs': ['models'], 'operations_dirs': ['operations']}, 'docker': {'image_version': 'latest', 'base_image': 'test-project-demo'}}; open('.pulpo.yml', 'w').write(yaml.dump(config, default_flow_style=False))"
 	@echo "✅ Configuration generated!"
 	@echo ""
 	@echo "📋 Demo project structure:"
 	@echo "   test-project-demo/"
-	@echo "   ├── .jobhunter.yml      (Auto-generated configuration)"
-	@echo "   ├── models/             (Data models)"
-	@echo "   │   ├── pokemon.py"
-	@echo "   │   ├── trainer.py"
-	@echo "   │   ├── element.py"
-	@echo "   │   ├── attack.py"
-	@echo "   │   └── fight_result.py"
-	@echo "   └── operations/         (Custom operations)"
-	@echo "       ├── pokemon_management.py"
-	@echo "       ├── pokemon_battles.py"
-	@echo "       └── pokemon_evolution.py"
+	@echo "   ├── .pulpo.yml          (Auto-generated configuration)"
+	@echo "   ├── models/             (Data model definitions)"
+	@echo "   └── operations/         (Operation implementations)"
 	@echo ""
 	@echo "🚀 Next steps:"
 	@echo "   1. cd test-project-demo"

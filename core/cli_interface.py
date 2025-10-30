@@ -473,6 +473,10 @@ Operations: {len(ops)}
             compile_all()
             if self.verbose:
                 self.console.print("[green]✓[/green] Compilation complete")
+
+            # Generate Prefect flows
+            self._compile_prefect_flows()
+
         except Exception as e:
             self.console.print(f"[red]✗[/red] Compilation failed: {e}")
             if self.verbose:
@@ -482,6 +486,83 @@ Operations: {len(ops)}
             raise
 
         return self.run_cache_dir
+
+    def _compile_prefect_flows(self) -> None:
+        """Generate Prefect flows from operations.
+
+        Internal helper called by compile() to generate flow definitions.
+        Creates orchestration/ directory with flow definitions.
+        """
+        try:
+            from .orchestration.dataflow import OperationMetadata as DataFlowOpMeta
+            from .orchestration.compiler import OrchestrationCompiler
+            from .orchestration.prefect_codegen import PrefectCodeGenerator
+
+            # Get all operations and convert to data flow metadata
+            operations = self.operation_registry.list_all()
+
+            if not operations:
+                if self.verbose:
+                    self.console.print(
+                        "[yellow]No operations found, skipping Prefect flow generation[/yellow]"
+                    )
+                return
+
+            # Convert to data flow metadata
+            dataflow_ops = [DataFlowOpMeta(op) for op in operations]
+
+            # Compile to flows
+            compiler = OrchestrationCompiler()
+            orchestration = compiler.compile(dataflow_ops)
+
+            if not orchestration.flows:
+                if self.verbose:
+                    self.console.print(
+                        "[yellow]No flows generated from operations[/yellow]"
+                    )
+                return
+
+            # Generate code
+            generator = PrefectCodeGenerator()
+            flow_codes = generator.generate_all_flows(orchestration)
+
+            # Create orchestration directory
+            orch_dir = self.run_cache_dir / "orchestration"
+            orch_dir.mkdir(parents=True, exist_ok=True)
+
+            # Ensure orchestration is a package
+            (orch_dir / "__init__.py").touch()
+
+            # Write flow files
+            for flow_name, code in flow_codes.items():
+                flow_file = orch_dir / f"{flow_name}.py"
+                flow_file.write_text(code)
+
+                if self.verbose:
+                    self.console.print(f"[green]✓[/green] Generated {flow_name}")
+
+            # Generate registry file
+            registry_code = generator.generate_flow_registry(orchestration)
+            registry_file = orch_dir / "registry.py"
+            registry_file.write_text(registry_code)
+
+            if self.verbose:
+                self.console.print(
+                    f"[green]✓[/green] Generated {len(orchestration.flows)} Prefect flows"
+                )
+
+        except ImportError as e:
+            # Prefect or orchestration modules not available
+            if self.verbose:
+                self.console.print(
+                    f"[yellow]Skipping Prefect flow generation: {e}[/yellow]"
+                )
+        except Exception as e:
+            self.console.print(f"[yellow]Warning: Failed to generate Prefect flows: {e}[/yellow]")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
 
     def build(self) -> None:
         """Build Docker images for the stack.
@@ -547,33 +628,157 @@ Operations: {len(ops)}
         self._ensure_compiled()
 
         if self.verbose:
-            self.console.print("[cyan]Initializing services...[/cyan]")
+            self.console.print("[cyan]Initializing database...[/cyan]")
 
-        # TODO: Implement database initialization
-        self.console.print(
-            "[yellow]Database initialization not yet implemented[/yellow]"
-        )
+        # Initialize database via Makefile target
+        self.db("init")
 
-    def prefect(self) -> None:
-        """Run Prefect orchestration.
+    def prefect(self, command: str = "start") -> None:
+        """Manage Prefect service.
 
         Requires: run_cache/orchestration/ (auto-compiles if needed)
 
-        Starts Prefect server with auto-generated flows.
+        Args:
+            command: "start", "stop", "restart", "logs", or "status"
 
         Example:
             >>> cli = CLI()
-            >>> cli.prefect()  # Starts Prefect with orchestration
+            >>> cli.prefect("start")  # Start Prefect server
+            >>> cli.prefect("logs")   # Show Prefect logs
+            >>> cli.prefect("stop")   # Stop Prefect
         """
         self._ensure_compiled()
 
         if self.verbose:
-            self.console.print("[cyan]Starting Prefect orchestration...[/cyan]")
+            self.console.print(f"[cyan]Prefect: {command}...[/cyan]")
 
-        # TODO: Implement Prefect orchestration
-        self.console.print(
-            "[yellow]Prefect orchestration not yet implemented[/yellow]"
-        )
+        try:
+            import subprocess
+
+            # Try to use Makefile target first
+            result = subprocess.run(
+                ["make", f"prefect-{command}"],
+                cwd=".",
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            if result.returncode == 0:
+                if result.stdout:
+                    self.console.print(result.stdout)
+                if self.verbose:
+                    self.console.print(f"[green]✓[/green] Prefect {command} complete")
+            else:
+                # Makefile command might not exist, show message
+                self.console.print(
+                    f"[yellow]Prefect {command} not available via Makefile[/yellow]"
+                )
+                if result.stderr:
+                    self.console.print(result.stderr)
+
+        except FileNotFoundError:
+            self.console.print("[yellow]Makefile not found[/yellow]")
+        except subprocess.TimeoutExpired:
+            self.console.print("[red]Prefect command timed out[/red]")
+        except Exception as e:
+            self.console.print(f"[red]Error managing Prefect: {e}[/red]")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
+
+    def db(self, command: str = "start") -> None:
+        """Manage database service.
+
+        Args:
+            command: "start", "stop", "status", "init", "backup", "restore"
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.db("start")    # Start database
+            >>> cli.db("init")     # Initialize database
+            >>> cli.db("status")   # Check database status
+        """
+        if self.verbose:
+            self.console.print(f"[cyan]Database: {command}...[/cyan]")
+
+        try:
+            import subprocess
+
+            # Try Makefile target first
+            result = subprocess.run(
+                ["make", f"db-{command}"],
+                cwd=".",
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            if result.returncode == 0:
+                if result.stdout:
+                    self.console.print(result.stdout)
+                if self.verbose:
+                    self.console.print(f"[green]✓[/green] Database {command} complete")
+            else:
+                self.console.print(
+                    f"[yellow]Database {command} not available via Makefile[/yellow]"
+                )
+                if result.stderr:
+                    self.console.print(result.stderr)
+
+        except Exception as e:
+            self.console.print(f"[red]Error managing database: {e}[/red]")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
+
+    def ui(self, command: str = "start") -> None:
+        """Manage UI service.
+
+        Args:
+            command: "start", "stop", "build", "dev", "logs"
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.ui("dev")      # Start UI development server
+            >>> cli.ui("build")    # Build UI for production
+            >>> cli.ui("logs")     # Show UI logs
+        """
+        if self.verbose:
+            self.console.print(f"[cyan]UI: {command}...[/cyan]")
+
+        try:
+            import subprocess
+
+            # Try Makefile target first
+            result = subprocess.run(
+                ["make", f"ui-{command}"],
+                cwd=".",
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            if result.returncode == 0:
+                if result.stdout:
+                    self.console.print(result.stdout)
+                if self.verbose:
+                    self.console.print(f"[green]✓[/green] UI {command} complete")
+            else:
+                self.console.print(
+                    f"[yellow]UI {command} not available via Makefile[/yellow]"
+                )
+                if result.stderr:
+                    self.console.print(result.stderr)
+
+        except Exception as e:
+            self.console.print(f"[red]Error managing UI: {e}[/red]")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
 
     def interact(self) -> None:
         """Start interactive Python shell with CLI context.
@@ -591,6 +796,96 @@ Operations: {len(ops)}
 
         # TODO: Implement interactive shell
         self.console.print("[yellow]Interactive shell not yet implemented[/yellow]")
+
+    def up(self) -> None:
+        """Start all services (database, API, Prefect, UI).
+
+        Starts services in dependency order using Makefile targets.
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.up()  # Start all services
+        """
+        if self.verbose:
+            self.console.print("[cyan]Starting all services...[/cyan]")
+
+        try:
+            import subprocess
+
+            # Try to use Makefile "up" target
+            result = subprocess.run(
+                ["make", "up"],
+                cwd=".",
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+
+            if result.returncode == 0:
+                if result.stdout:
+                    self.console.print(result.stdout)
+                if self.verbose:
+                    self.console.print("[green]✓[/green] All services started")
+            else:
+                self.console.print("[yellow]Failed to start services via Makefile[/yellow]")
+                if result.stderr:
+                    self.console.print(result.stderr)
+
+        except FileNotFoundError:
+            self.console.print("[yellow]Makefile not found[/yellow]")
+        except subprocess.TimeoutExpired:
+            self.console.print("[red]Service startup timed out[/red]")
+        except Exception as e:
+            self.console.print(f"[red]Error starting services: {e}[/red]")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
+
+    def down(self) -> None:
+        """Stop all services (database, API, Prefect, UI).
+
+        Stops services in reverse dependency order using Makefile targets.
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.down()  # Stop all services
+        """
+        if self.verbose:
+            self.console.print("[cyan]Stopping all services...[/cyan]")
+
+        try:
+            import subprocess
+
+            # Try to use Makefile "down" target
+            result = subprocess.run(
+                ["make", "down"],
+                cwd=".",
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+
+            if result.returncode == 0:
+                if result.stdout:
+                    self.console.print(result.stdout)
+                if self.verbose:
+                    self.console.print("[green]✓[/green] All services stopped")
+            else:
+                self.console.print("[yellow]Failed to stop services via Makefile[/yellow]")
+                if result.stderr:
+                    self.console.print(result.stderr)
+
+        except FileNotFoundError:
+            self.console.print("[yellow]Makefile not found[/yellow]")
+        except subprocess.TimeoutExpired:
+            self.console.print("[red]Service shutdown timed out[/red]")
+        except Exception as e:
+            self.console.print(f"[red]Error stopping services: {e}[/red]")
+            if self.verbose:
+                import traceback
+
+                traceback.print_exc()
 
     def clean(self) -> None:
         """Remove generated artifacts (run_cache).

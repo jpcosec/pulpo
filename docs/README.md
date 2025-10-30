@@ -5,7 +5,7 @@ Generated automatically from your `@datamodel` and `@operation` decorators.
 ## Overview
 
 - **Models**: 0
-- **Operations**: 0
+- **Operations**: 1
 
 ## Diagrams
 

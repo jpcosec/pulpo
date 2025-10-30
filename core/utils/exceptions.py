@@ -1,20 +1,20 @@
 """
-Custom exception hierarchy for the JobHunter AI application.
+Custom exception hierarchy for Pulpo Core framework.
 
 This module defines a structured exception hierarchy with proper categorization,
 factory methods, and context managers for clean exception handling.
 
 Example:
-    >>> from core.utils.exceptions import ScrapingError, ExceptionFactory
+    >>> from core.utils.exceptions import ValidationError, ExceptionFactory
     >>>
     >>> # Raise with details
-    >>> raise ScrapingError(
-    ...     "Failed to scrape job listings",
-    ...     details={"url": "https://example.com", "status_code": 404}
+    >>> raise ValidationError(
+    ...     "Invalid input data",
+    ...     details={"field": "name", "reason": "required"}
     ... )
     >>>
     >>> # Use factory
-    >>> error = ExceptionFactory.scraping_failed(url="https://example.com", status_code=404)
+    >>> error = ExceptionFactory.validation_failed(field="name", value=None, reason="required")
     >>> raise error
 """
 
@@ -28,11 +28,11 @@ from typing import Any, TypeVar
 # ==============================================================================
 
 
-class JobHunterException(Exception, ABC):
-    """Base exception for all JobHunter AI errors.
+class PulpoException(Exception, ABC):
+    """Base exception for all Pulpo Core framework errors.
 
     All custom exceptions in the application inherit from this class.
-    This allows for catching all application-specific errors with a
+    This allows for catching all framework-specific errors with a
     single except clause.
 
     Attributes:
@@ -66,7 +66,7 @@ class JobHunterException(Exception, ABC):
         """Return detailed representation of the exception."""
         return f"{self.__class__.__name__}(message={self.message!r}, details={self.details!r})"
 
-    def with_detail(self, key: str, value: Any) -> "JobHunterException":
+    def with_detail(self, key: str, value: Any) -> "PulpoException":
         """Add a detail to the exception.
 
         Args:
@@ -85,7 +85,7 @@ class JobHunterException(Exception, ABC):
 # ==============================================================================
 
 
-class ExternalServiceError(JobHunterException, ABC):
+class ExternalServiceError(PulpoException, ABC):
     """Base for errors related to external services.
 
     This includes scraping errors, API errors, and network errors.
@@ -94,7 +94,7 @@ class ExternalServiceError(JobHunterException, ABC):
     category: str = "external_service"
 
 
-class InternalError(JobHunterException, ABC):
+class InternalError(PulpoException, ABC):
     """Base for errors related to internal operations.
 
     This includes database errors, processing errors, and validation errors.
@@ -103,7 +103,7 @@ class InternalError(JobHunterException, ABC):
     category: str = "internal"
 
 
-class UserInputError(JobHunterException, ABC):
+class UserInputError(PulpoException, ABC):
     """Base for errors caused by invalid user input.
 
     This includes validation errors and configuration errors.
@@ -112,7 +112,7 @@ class UserInputError(JobHunterException, ABC):
     category: str = "user_input"
 
 
-class OperationalError(JobHunterException, ABC):
+class OperationalError(PulpoException, ABC):
     """Base for errors during job application operations.
 
     This includes application submission errors and automation errors.
@@ -289,7 +289,7 @@ class ApplicationError(OperationalError):
 # ==============================================================================
 
 
-class RetryableError(JobHunterException):
+class RetryableError(PulpoException):
     """Exception raised for errors that can be retried.
 
     This is a marker exception that indicates an operation failed but
@@ -428,7 +428,7 @@ class ExceptionFactory:
 # ==============================================================================
 
 
-E = TypeVar("E", bound=JobHunterException)
+E = TypeVar("E", bound=PulpoException)
 
 
 @contextmanager
@@ -524,6 +524,6 @@ def get_error_category(error: Exception) -> str:
     Returns:
         Error category string
     """
-    if isinstance(error, JobHunterException):
+    if isinstance(error, PulpoException):
         return error.category
     return "unknown"

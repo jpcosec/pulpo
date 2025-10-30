@@ -11,3 +11,10 @@ graph LR
 - **Labels**: Operation names
 
 ## Operations Detail
+
+### test.op
+
+**Description**: Test operation
+**Category**: test
+**Input Models**: None
+**Output Models**: TestModel

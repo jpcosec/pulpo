@@ -141,6 +141,71 @@ def init(
 
 
 @app.command()
+def up():
+    """Start all services (database, API, Prefect, UI)."""
+    cli = get_cli()
+    console.print("[cyan]Starting all services...[/cyan]")
+    try:
+        cli.up()
+        console.print("[green]✓[/green] All services started")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def down():
+    """Stop all services."""
+    cli = get_cli()
+    console.print("[cyan]Stopping all services...[/cyan]")
+    try:
+        cli.down()
+        console.print("[green]✓[/green] All services stopped")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def prefect(
+    command: str = typer.Argument("start", help="prefect command: start, stop, restart, logs, status"),
+):
+    """Manage Prefect orchestration server."""
+    cli = get_cli()
+    try:
+        cli.prefect(command)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def db(
+    command: str = typer.Argument("status", help="database command: start, stop, init, status, logs"),
+):
+    """Manage database service."""
+    cli = get_cli()
+    try:
+        cli.db(command)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def clean():
+    """Remove generated artifacts (run_cache)."""
+    cli = get_cli()
+    console.print("[cyan]Removing generated artifacts...[/cyan]")
+    try:
+        cli.clean()
+        console.print("[green]✓[/green] Cleaned run_cache/")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
 def ui(
     port: int = typer.Option(3000, help="Port to run UI on"),
 ):

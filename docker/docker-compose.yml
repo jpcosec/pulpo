@@ -4,32 +4,32 @@ services:
   # MongoDB database
   mongodb:
     image: mongo:7.0
-    container_name: jobhunter-mongodb
+    container_name: ${PROJECT_NAME}-mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
-      - jobhunter-mongo-data:/data/db
+      - ${PROJECT_NAME}-mongo-data:/data/db
     environment:
-      - MONGO_INITDB_DATABASE=jobhunter
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # JobHunter API
+  # Pulpo Core API
   api:
     build:
       context: ../..
       dockerfile: core/docker/Dockerfile
-    container_name: jobhunter-api
+    container_name: ${PROJECT_NAME}-api
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
-      - MONGODB_DATABASE=jobhunter
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
       - ENVIRONMENT=production
     depends_on:
       mongodb:
@@ -47,7 +47,7 @@ services:
     build:
       context: ../..
       dockerfile: core/docker/Dockerfile.ui
-    container_name: jobhunter-ui
+    container_name: ${PROJECT_NAME}-ui
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -64,7 +64,7 @@ services:
   # Prefect Server
   prefect-server:
     image: prefecthq/prefect:2.20-python3.11
-    container_name: jobhunter-prefect-server
+    container_name: ${PROJECT_NAME}-prefect-server
     restart: unless-stopped
     ports:
       - "4200:4200"
@@ -83,7 +83,7 @@ services:
   # Prefect Worker
   prefect-worker:
     image: prefecthq/prefect:2.20-python3.11
-    container_name: jobhunter-prefect-worker
+    container_name: ${PROJECT_NAME}-prefect-worker
     restart: unless-stopped
     environment:
       - PREFECT_API_URL=http://prefect-server:4200/api
@@ -97,7 +97,7 @@ services:
     command: prefect worker start --pool default
 
 volumes:
-  jobhunter-mongo-data:
-    name: jobhunter-mongo-data
+  ${PROJECT_NAME}-mongo-data:
+    name: ${PROJECT_NAME}-mongo-data
   prefect-data:
-    name: jobhunter-prefect-data
+    name: ${PROJECT_NAME}-prefect-data

@@ -1,7 +1,12 @@
 # Pulpo Core Framework
 
 **Version:** 0.6.0 (First iteration toward pip-installable library)
+
+⚠️ **Status**: 🔄 **REFACTORING IN PROGRESS** - Making Pulpo Core a domain-agnostic, importable library
+
 **A metadata-driven code generation framework for building full-stack applications**
+
+> **What's happening?** The codebase is being refactored to remove all domain-specific code (JobHunter references) and become a true, reusable library. See [`plan_docs/REFACTORING_STATUS.md`](plan_docs/REFACTORING_STATUS.md) for current status and [`plan_docs/GRAPH_DRIVEN_ARCHITECTURE.md`](plan_docs/GRAPH_DRIVEN_ARCHITECTURE.md) for the architectural foundation.
 
 ## Overview
 
@@ -64,26 +69,24 @@ from beanie import Document
 from core import datamodel
 
 @datamodel(
-    name="Job",
-    description="Job posting model",
-    tags=["jobs", "recruiting"]
+    name="Item",
+    description="Generic item model",
+    tags=["items"]
 )
-class Job(Document):
-    """Job posting from external sources."""
+class Item(Document):
+    """Item entity in the system."""
 
-    source: str
-    external_id: str
-    title: str
-    company: str
-    url: str
+    name: str
+    description: str
+    status: str
 
     class Settings:
-        name = "jobs"  # MongoDB collection name
+        name = "items"  # MongoDB collection name
 ```
 
 **What happens:**
 - Model is registered in `ModelRegistry`
-- CRUD API endpoints are generated: `GET /jobs`, `POST /jobs`, etc.
+- CRUD API endpoints are generated: `GET /items`, `POST /items`, etc.
 - UI pages are generated: list, create, edit, show
 - Full type validation via Pydantic
 
@@ -93,36 +96,36 @@ class Job(Document):
 from pydantic import BaseModel
 from core import operation
 
-class MatchInput(BaseModel):
-    user_id: str
-    job_id: str
+class ProcessInput(BaseModel):
+    item_id: str
+    action: str
 
-class MatchOutput(BaseModel):
-    score: float
-    reasons: list[str]
+class ProcessOutput(BaseModel):
+    success: bool
+    message: str
 
 @operation(
-    name="match_job",
-    description="Compute job match score for user",
-    category="matching",
-    inputs=MatchInput,
-    outputs=MatchOutput,
-    models_in=["User", "Job"],
+    name="process_item",
+    description="Process an item with specified action",
+    category="processing",
+    inputs=ProcessInput,
+    outputs=ProcessOutput,
+    models_in=["Item"],
     models_out=[]
 )
-async def match_job(input: MatchInput) -> MatchOutput:
-    """Calculate how well a job matches a user's profile."""
+async def process_item(input: ProcessInput) -> ProcessOutput:
+    """Process item according to the specified action."""
     # Your logic here
-    return MatchOutput(
-        score=0.85,
-        reasons=["Skills match", "Location match"]
+    return ProcessOutput(
+        success=True,
+        message=f"Item {input.item_id} processed with action: {input.action}"
     )
 ```
 
 **What happens:**
 - Operation is registered in `OperationRegistry`
-- API endpoint is created: `POST /operations/match_job`
-- CLI command is created: `jobhunter ops match_job`
+- API endpoint is created: `POST /operations/process_item`
+- CLI command is created: `pulpo ops process_item` (project-specific name)
 - Operation is tracked via TaskRun for observability
 
 ### 3. Generate Surfaces
@@ -140,25 +143,26 @@ from core.codegen import RefineConfigGenerator
 ui_gen = RefineConfigGenerator()
 ui_config = ui_gen.generate()
 
-# Or use the CLI
-jobhunter generate api
-jobhunter generate ui-config
-jobhunter generate ui-pages
+# Or use the CLI (after running 'make init' in your project)
+<PROJECT_CLI> generate api
+<PROJECT_CLI> generate ui-config
+<PROJECT_CLI> generate ui-pages
 ```
 
 ### 4. Run Your Application
 
 ```bash
 # Start API server
-jobhunter api start
+<PROJECT_CLI> api start
 
 # Or run directly
 python -m core.api
 
 # Use CLI
-jobhunter ops list
-jobhunter ops run match_job --input '{"user_id": "123", "job_id": "456"}'
+<PROJECT_CLI> ops list
+<PROJECT_CLI> ops run process_item --input '{"item_id": "123", "action": "process"}'
 ```
+Note: `<PROJECT_CLI>` is your project-specific CLI name (set during `make init`)
 
 ## Architecture
 
@@ -240,16 +244,16 @@ core/
 ```python
 from core.base import DataModelBase, OperationBase
 
-class Job(Document, DataModelBase):
+class Item(Document, DataModelBase):
     """Enhanced model with additional methods."""
 
     @classmethod
     def relations(cls) -> list[dict]:
-        return [{"field": "company_id", "model": "Company"}]
+        return [{"field": "parent_id", "model": "Item"}]
 
     @classmethod
     def indexes(cls) -> list:
-        return ["source", "external_id"]
+        return ["status", "created_at"]
 
 class ComplexOperation(OperationBase):
     """Multi-step operation with planning."""
@@ -304,14 +308,14 @@ All operations are automatically tracked and orchestrated via **Prefect**:
 Operations use hierarchical naming for automatic flow composition:
 
 ```python
-@operation(name="scraping.stepstone.fetch")
-async def fetch_stepstone(): ...
+@operation(name="pipeline.source_a.fetch")
+async def fetch_source_a(): ...
 
-@operation(name="scraping.linkedin.fetch")
-async def fetch_linkedin(): ...
+@operation(name="pipeline.source_b.fetch")
+async def fetch_source_b(): ...
 
-@operation(name="scraping.merge")
-async def merge(stepstone, linkedin):
+@operation(name="pipeline.merge")
+async def merge(source_a, source_b):
     # Dependencies auto-injected, parallel fetches handled by framework
     ...
 
@@ -390,18 +394,52 @@ poetry run pytest --cov=core --cov-report=html
 
 ## Examples
 
-The `core/examples/` directory contains working examples:
+Pulpo Core includes complete, production-quality example projects in the `examples/` directory:
 
-```python
-# Example model
-from core.examples.models.test_model import TestItem
+### [📚 Read the Complete Examples Guide](docs/EXAMPLES.md)
 
-# Example operations
-from core.examples.operations.test_ops import create_test_item
+#### Quick Examples
 
-# Run example
-await create_test_item(CreateTestInput(name="example", value=42))
+**1. Todo List** - Simple CRUD + workflow
+```bash
+cd examples/
+tar -xzf todo-app.tar.gz
+cd todo-app
+pulpo cli init && pulpo compile && pulpo up
 ```
+
+**2. Pokemon** - Domain modeling + game mechanics
+```bash
+cd examples/
+tar -xzf pokemon-app.tar.gz
+cd pokemon-app
+pulpo cli init && pulpo compile && pulpo up
+```
+
+**3. E-commerce** - Complex parallelization + sequential pipelines
+```bash
+cd examples/
+tar -xzf ecommerce-app.tar.gz
+cd ecommerce-app
+pulpo cli init && pulpo compile && pulpo up
+```
+
+#### Learning Path
+
+| Example | Focus | Concepts |
+|---------|-------|----------|
+| **Todo List** | Beginner | CRUD, workflows, simple parallelization |
+| **Pokemon** | Intermediate | Domain modeling, game mechanics, mixed parallelization |
+| **E-commerce** | Advanced | Nested models, parallel checkout, sequential fulfillment |
+
+Each example includes:
+- ✅ Complete data models with decorators
+- ✅ Multiple operations demonstrating patterns
+- ✅ Comprehensive README with diagrams
+- ✅ Generated API/CLI/UI configurations
+- ✅ Best practices and architectural patterns
+
+See [docs/EXAMPLES.md](docs/EXAMPLES.md) for detailed documentation.
 
 ## Contributing
 

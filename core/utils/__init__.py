@@ -1,5 +1,5 @@
 """
-Utilities package for JobHunter AI.
+Utilities package for Pulpo Core framework.
 
 This package provides common utilities including logging, configuration,
 validation, exceptions, and constants.
@@ -84,7 +84,7 @@ from core.utils.exceptions import (
     ExternalServiceError,
     InternalError,
     # Base exceptions
-    JobHunterException,
+    PulpoException,
     OperationalError,
     ProcessingError,
     RateLimitError,
@@ -170,7 +170,7 @@ __all__ = [
     "reset_settings",
     "reload_settings",
     # Exceptions
-    "JobHunterException",
+    "PulpoException",
     "ExternalServiceError",
     "InternalError",
     "UserInputError",
