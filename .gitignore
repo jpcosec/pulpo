@@ -125,6 +125,7 @@ dmypy.json
 # IDE settings
 .vscode/
 .idea/
+.obsidian/
 *.swp
 *.swo
 *~
