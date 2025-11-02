@@ -21,6 +21,7 @@ class StartWorkOutput(BaseModel):
 
 @operation(
     name="todos.workflow.start",
+    category="workflow",
     description="Start working on a todo (change status to in_progress)",
     inputs=StartWorkInput,
     outputs=StartWorkOutput,
@@ -53,6 +54,7 @@ class CompleteTodoOutput(BaseModel):
 
 @operation(
     name="todos.workflow.complete",
+    category="workflow",
     description="Mark a todo as completed",
     inputs=CompleteTodoInput,
     outputs=CompleteTodoOutput,
@@ -85,6 +87,7 @@ class ReopenTodoOutput(BaseModel):
 
 @operation(
     name="todos.workflow.reopen",
+    category="workflow",
     description="Reopen a completed todo (change status back to pending)",
     inputs=ReopenTodoInput,
     outputs=ReopenTodoOutput,
@@ -118,6 +121,7 @@ class ArchiveTodosOutput(BaseModel):
 
 @operation(
     name="todos.sync.archive",
+    category="sync",
     description="Archive all completed todos older than threshold",
     inputs=ArchiveTodosInput,
     outputs=ArchiveTodosOutput,

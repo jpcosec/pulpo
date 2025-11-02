@@ -27,6 +27,7 @@ class BattleOutput(BaseModel):
 
 @operation(
     name="pokemon.battles.execute",
+    category="battles",
     description="Simulate a battle between two Pokemon",
     inputs=BattleInput,
     outputs=BattleOutput,
@@ -74,6 +75,7 @@ class TrainerBattleOutput(BaseModel):
 
 @operation(
     name="pokemon.battles.trainer_execute",
+    category="battles",
     description="Simulate a full battle between two Pokemon trainers",
     inputs=TrainerBattleInput,
     outputs=TrainerBattleOutput,

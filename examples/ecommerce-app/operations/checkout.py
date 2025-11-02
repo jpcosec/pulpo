@@ -21,6 +21,7 @@ class ValidateItemsOutput(BaseModel):
 
 @operation(
     name="orders.checkout.validate_items",
+    category="checkout",
     description="Validate that all items are in stock",
     inputs=ValidateItemsInput,
     outputs=ValidateItemsOutput,
@@ -51,6 +52,7 @@ class ValidatePaymentOutput(BaseModel):
 
 @operation(
     name="orders.checkout.validate_payment",
+    category="checkout",
     description="Validate payment method and details",
     inputs=ValidatePaymentInput,
     outputs=ValidatePaymentOutput,
@@ -83,6 +85,7 @@ class CalculateShippingOutput(BaseModel):
 
 @operation(
     name="orders.checkout.calculate_shipping",
+    category="checkout",
     description="Calculate shipping cost based on address and weight",
     inputs=CalculateShippingInput,
     outputs=CalculateShippingOutput,

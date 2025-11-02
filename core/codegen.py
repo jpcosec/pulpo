@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -1057,10 +1058,71 @@ def compile_all(project_dir: Path | None = None):
     print(f"  - {frontend_dir}/ (complete frontend)")
     print(f"  - {cli_file} (CLI executable)")
     print("  - docs/ (architecture diagrams)")
+
+    # Generate registry.json for debugging
+    print("\n→ Generating registry.json for debugging...")
+    try:
+        _generate_registry_json()
+        print("  ✓ registry.json generated in .run_cache/")
+    except Exception as e:
+        print(f"  ⚠️  Could not generate registry.json: {e}")
+
     print("\nTo use:")
     print("  API: from .run_cache.generated_api import setup_routes")
     print(f"  Frontend: cd {frontend_dir} && npm install && npm run dev")
     print(f"  CLI: ./{cli_file} --help")
+
+
+def _generate_registry_json():
+    """Generate registry.json file for debugging purposes.
+
+    Creates a JSON file in .run_cache/ containing all discovered models
+    and operations, along with metadata about the discovery process.
+    """
+    run_cache_dir = Path(".run_cache")
+    run_cache_dir.mkdir(exist_ok=True)
+
+    registry_file = run_cache_dir / "registry.json"
+
+    # Get models and operations from registries
+    models = ModelRegistry.list_all()
+    operations = OperationRegistry.list_all()
+
+    # Build registry data
+    registry_data = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "method": "file_scan_discovery",
+        "models": [],
+        "operations": []
+    }
+
+    # Add model information
+    for model in models:
+        model_info = {
+            "name": model.name,
+            "description": model.description or "",
+            "tags": model.tags or [],
+            "searchable_fields": model.searchable_fields or [],
+            "sortable_fields": model.sortable_fields or [],
+        }
+        registry_data["models"].append(model_info)
+
+    # Add operation information
+    for op in operations:
+        op_info = {
+            "name": op.name,
+            "description": op.description or "",
+            "category": op.category or "",
+            "inputs": op.input_schema.__name__ if op.input_schema else None,
+            "outputs": op.output_schema.__name__ if op.output_schema else None,
+            "models_in": op.models_in or [],
+            "models_out": op.models_out or [],
+        }
+        registry_data["operations"].append(op_info)
+
+    # Write to file
+    with open(registry_file, "w") as f:
+        json.dump(registry_data, f, indent=2)
 
 
 def _generate_cli(project_name: str = "cli"):

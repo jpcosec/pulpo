@@ -1,30 +1,83 @@
-# CLI Architecture: Dynamic Discovery with Smart Compilation
+# CLI Architecture: Main Entrypoint Discovery with Smart Compilation
 
 ## Overview
 
 The `CLI` class is the main interface to the Pulpo framework. It's designed to be:
-- **Dynamic**: Discovers decorators at runtime on each instantiation
+- **Explicit**: Discovers decorators via main.py imports only (not file scanning)
 - **Smart**: Only generates required artifacts when needed
 - **Flexible**: Supports inspection without full compilation
 - **Modular**: Users can integrate operations directly without full stack
 
 ---
 
-## CLI Instantiation & Discovery
+## Discovery Architecture
 
-Every time a `CLI()` instance is created, it performs fresh discovery:
+### Primary Method: Main Entrypoint Imports
+
+Discovery happens exclusively through **explicit imports in main.py**:
 
 ```python
-from pulpo import CLI
+# main entrypoint file (e.g., ./main)
+#!/usr/bin/env python
+from models.user import User              # @datamodel decorator executes
+from models.post import Post              # @datamodel decorator executes
+from operations.create_user import create_user  # @operation decorator executes
+from operations.publish import publish_post     # @operation decorator executes
 
-cli = CLI()  # On instantiation:
-# 1. Creates fresh registries (ModelRegistry, OperationRegistry)
-# 2. Scans project for @datamodel and @operation decorators
-# 3. Populates registries with discovered items
-# 4. Does NOT create run_cache/ or generate artifacts
+from core import CLI
+
+# When main.py is imported, all decorators execute and register models/operations
+# Registry is populated at import time (no scanning needed)
+
+if __name__ == "__main__":
+    cli = CLI()  # CLI() reads already-populated registries
+    cli.compile()
 ```
 
-**Key Point:** Discovery is automatic and immediate. No explicit discovery call needed.
+**Key Points:**
+- Only imports in main.py trigger decorator registration
+- File scanning is NOT performed automatically
+- Registry state is built at import time, reused by CLI
+- Same discovery method applies to all example projects
+
+### Secondary Method: File Scanning (Debug/Bootstrap)
+
+File scanning is available for debugging and generating a bootstrap main.py:
+
+```python
+from core.discovery import discover_via_scan
+
+# Scan entire codebase (slower, for debugging)
+models, operations = discover_via_scan("./models", "./operations")
+
+# Or use to generate main.py as bootstrap:
+# python -m core.discovery --generate-main
+```
+
+**When to use:**
+- Debugging: "What did the file scanner find?"
+- Bootstrapping: Generating initial main.py when starting new project
+- CI/CD: Validating all decorators are properly imported
+
+---
+
+## CLI Instantiation & Registry Population
+
+```python
+from core import CLI
+
+# Before CLI instantiation:
+# 1. main.py is imported (triggers all @datamodel/@operation decorators)
+# 2. Registries are populated automatically by decorators
+# 3. Registry state persists for the Python process
+
+cli = CLI()  # On instantiation:
+# 1. Reads already-populated registries (no discovery step)
+# 2. Does NOT scan files
+# 3. Does NOT create run_cache/ or generate artifacts
+```
+
+**Key Point:** Discovery happens at import time, not CLI instantiation. CLI uses the registries that were populated by decorators.
 
 ---
 
@@ -99,6 +152,133 @@ registry = cli.get_model_registry()
 registry = cli.get_operation_registry()
 # Returns fresh registries, works immediately
 ```
+
+#### `summary()`
+```python
+cli.summary()  # Show project status
+# Works immediately
+# Displays number of models, operations, and registries
+```
+
+---
+
+## Help System & Documentation
+
+### Framework-Level Help
+
+The Pulpo CLI provides comprehensive framework documentation:
+
+```bash
+# List all available framework documentation
+pulpo help
+
+# Get specific framework documentation
+pulpo help datamodel          # @datamodel decorator reference
+pulpo help operation          # @operation decorator reference
+pulpo help cli                # CLI architecture (this file)
+pulpo help architecture       # Framework architecture overview
+pulpo help orchestration      # Hierarchical naming and Prefect flows
+```
+
+### Project-Level Help
+
+Each project CLI includes help for its models and operations:
+
+```bash
+# List all available documentation (models, operations, framework)
+./main help
+
+# Get model documentation (with fields, CRUD endpoints, relationships)
+./main help model User
+./main help model Post
+
+# Get operation documentation (with inputs, outputs, API endpoint)
+./main help operation users.create
+./main help operation posts.publish
+
+# Get framework documentation (same as pulpo framework docs)
+./main help framework datamodel
+./main help framework architecture
+```
+
+### Documentation Extraction
+
+The `DocHelper` class extracts documentation from multiple sources:
+
+```python
+from core.doc_helper import DocHelper
+
+helper = DocHelper()
+
+# Framework documentation (from .md files in docs/)
+framework_doc = helper.get_framework_doc("datamodel")
+
+# Model documentation (from @datamodel decorator + class docstring)
+model_doc = helper.get_model_docs("User")
+
+# Operation documentation (from @operation decorator + function docstring)
+op_doc = helper.get_operation_docs("users.create")
+
+# List all available documentation
+all_docs = helper.list_all_docs()
+# Returns:
+# {
+#     "framework": ["datamodel", "operation", "cli", ...],
+#     "models": ["User", "Post", "Comment", ...],
+#     "operations": ["users.create", "posts.publish", ...]
+# }
+```
+
+**What gets extracted:**
+
+For Models:
+- Class docstring and @datamodel description
+- Field names, types, and descriptions
+- Metadata (tags, searchable fields, sortable fields)
+- Auto-generated CRUD endpoints
+
+For Operations:
+- Function docstring and @operation description
+- Input/output Pydantic schemas
+- Category and metadata
+- Auto-generated API endpoint
+- Auto-generated CLI command
+
+### Registry Auditing with registry.json
+
+After compilation, `.run_cache/registry.json` contains the complete discovery results:
+
+```json
+{
+  "timestamp": "2024-03-15T10:30:45.123456",
+  "discovery_method": "main.py entrypoint",
+  "models": [
+    {
+      "name": "User",
+      "description": "User account",
+      "fields": {
+        "name": "str",
+        "email": "str",
+        "created_at": "datetime"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "users.create",
+      "category": "users",
+      "description": "Create new user",
+      "input_schema": "UserCreateInput",
+      "output_schema": "UserCreateOutput"
+    }
+  ]
+}
+```
+
+**Use cases:**
+- CI/CD validation: "Were all decorators properly imported?"
+- Auditing: "What was the exact state when this was generated?"
+- Debugging: "Which models/operations were discovered?"
 
 ### Category 2: Full Stack (Requires run_cache)
 

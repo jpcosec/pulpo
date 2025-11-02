@@ -1,0 +1,357 @@
+#!/usr/bin/env python
+"""E-commerce Demo Project - Pulpo Entrypoint.
+
+This is the main entrypoint for the E-commerce project. It imports all models
+and operations, creating the registry that Pulpo uses for code generation.
+
+Usage:
+    ./main compile       # Generate artifacts
+    ./main graph         # Generate relationship diagrams
+    ./main api           # Start API server
+    ./main up            # Start all services
+"""
+
+import sys
+from pathlib import Path
+
+import typer
+from rich.console import Console
+
+# Add project to path for imports
+PROJECT_DIR = Path(__file__).parent
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
+
+# Import all models - this triggers @datamodel decorators
+from models.customer import Customer
+from models.product import Product
+from models.order import Order
+from models.payment import Payment
+
+# Import all operations - this triggers @operation decorators
+from operations.checkout import validate_items, calculate_shipping
+from operations.fulfillment import reserve_items, pick_items, pack_items, ship_items
+from operations.payments import charge_payment, confirm_payment, verify_payment
+from operations.tracking import update_customer
+
+# Import Pulpo CLI to inherit commands
+from core import CLI
+
+# Create Typer app for this project
+app = typer.Typer(
+    name="ecommerce",
+    help="E-commerce Demo - Advanced parallelization and orchestration",
+    no_args_is_help=True,
+)
+
+console = Console()
+
+# Global CLI instance
+_cli_instance: CLI | None = None
+
+
+def get_cli() -> CLI:
+    """Get or create CLI instance."""
+    global _cli_instance
+    if _cli_instance is None:
+        _cli_instance = CLI(verbose=False)
+    return _cli_instance
+
+
+# ============================================================================
+# DISCOVERY & INSPECTION
+# ============================================================================
+
+
+@app.command()
+def status():
+    """Show project status."""
+    cli = get_cli()
+    summary = cli.summary()
+    console.print(summary)
+
+
+@app.command()
+def models():
+    """List registered models."""
+    cli = get_cli()
+    models_list = cli.list_models()
+
+    if not models_list:
+        console.print("[yellow]No models registered[/yellow]")
+        return
+
+    console.print("[bold]Registered Models:[/bold]")
+    for model_name in models_list:
+        info = cli.inspect_model(model_name)
+        console.print(f"  [cyan]{model_name}[/cyan]")
+        if info.get("description"):
+            console.print(f"    {info['description']}")
+
+
+@app.command()
+def lint():
+    """Lint models and operations."""
+    cli = get_cli()
+    console.print("[cyan]Linting models and operations...[/cyan]")
+    try:
+        cli.lint()
+        console.print("[green]✓[/green] Linting passed")
+    except Exception as e:
+        console.print(f"[red]✗[/red] Linting failed: {e}")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# CODE GENERATION
+# ============================================================================
+
+
+@app.command()
+def compile():
+    """Generate all artifacts to run_cache."""
+    cli = get_cli()
+    console.print("[cyan]Compiling...[/cyan]")
+    try:
+        cache_dir = cli.compile()
+        console.print(f"[green]✓[/green] Compiled to {cache_dir}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def docs():
+    """Generate markdown documentation."""
+    cli = get_cli()
+    console.print("[cyan]Generating documentation...[/cyan]")
+    try:
+        docs_dir = cli.docs()
+        console.print(f"[green]✓[/green] Generated docs in {docs_dir}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def graph():
+    """Generate relationship diagrams."""
+    cli = get_cli()
+    console.print("[cyan]Generating graphs...[/cyan]")
+    try:
+        graphs_dir = cli.draw_graphs()
+        console.print(f"[green]✓[/green] Generated graphs in {graphs_dir}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def flows():
+    """Generate operation flow diagrams."""
+    cli = get_cli()
+    console.print("[cyan]Generating operation flows...[/cyan]")
+    try:
+        flows_dir = cli.draw_operationflow()
+        console.print(f"[green]✓[/green] Generated flows in {flows_dir}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# SERVICE MANAGEMENT
+# ============================================================================
+
+
+@app.command()
+def init(
+    db_host: str = typer.Option("localhost", help="Database host"),
+    db_port: int = typer.Option(27017, help="Database port"),
+):
+    """Initialize project services."""
+    cli = get_cli()
+    console.print("[cyan]Initializing services...[/cyan]")
+    try:
+        cli.init()
+        console.print("[green]✓[/green] Services initialized")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def api(
+    host: str = typer.Option("0.0.0.0", help="Host to bind to"),
+    port: int = typer.Option(8000, help="Port to bind to"),
+):
+    """Start FastAPI server."""
+    cli = get_cli()
+    console.print(f"[cyan]Starting API on {host}:{port}...[/cyan]")
+    try:
+        cli.api(host=host, port=port)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def up():
+    """Start all services (database, API, Prefect, UI)."""
+    cli = get_cli()
+    console.print("[cyan]Starting all services...[/cyan]")
+    try:
+        cli.up()
+        console.print("[green]✓[/green] All services started")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def down():
+    """Stop all services."""
+    cli = get_cli()
+    console.print("[cyan]Stopping all services...[/cyan]")
+    try:
+        cli.down()
+        console.print("[green]✓[/green] All services stopped")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def db(
+    command: str = typer.Argument("status", help="database command: start, stop, init, status, logs"),
+):
+    """Manage database service."""
+    cli = get_cli()
+    try:
+        cli.db(command)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def prefect(
+    command: str = typer.Argument("start", help="prefect command: start, stop, restart, logs, status"),
+):
+    """Manage Prefect orchestration server."""
+    cli = get_cli()
+    try:
+        cli.prefect(command)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def clean():
+    """Remove generated artifacts (run_cache)."""
+    cli = get_cli()
+    console.print("[cyan]Removing generated artifacts...[/cyan]")
+    try:
+        cli.clean()
+        console.print("[green]✓[/green] Cleaned run_cache/")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# OPERATIONS
+# ============================================================================
+
+
+@app.command()
+def ops_list():
+    """List all operations."""
+    cli = get_cli()
+    ops = cli.list_operations()
+
+    if not ops:
+        console.print("[yellow]No operations registered[/yellow]")
+        return
+
+    console.print("[bold]Registered Operations:[/bold]")
+    for op_name in ops:
+        info = cli.inspect_operation(op_name)
+        console.print(f"  [cyan]{op_name}[/cyan]")
+        if info.get("description"):
+            console.print(f"    {info['description']}")
+
+
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+
+
+@app.command()
+def help(
+    item_type: str = typer.Argument(None, help="Type: 'model', 'operation', 'framework'"),
+    item_name: str = typer.Argument(None, help="Name of the item"),
+):
+    """Get documentation for models, operations, or framework.
+
+    Usage:
+        ./main help model Product              # Show Product model docs
+        ./main help operation orders.checkout.validate_items  # Show operation docs
+        ./main help framework datamodel       # Show framework docs
+        ./main help                           # List available items
+    """
+    from core.doc_helper import DocHelper, format_doc_output
+
+    doc_helper = DocHelper()
+
+    if not item_type:
+        # List available documentation
+        all_docs = doc_helper.list_all_docs()
+
+        console.print("[bold]Available Documentation:[/bold]\n")
+
+        if all_docs["models"]:
+            console.print("[cyan]Models:[/cyan]")
+            for name in all_docs["models"]:
+                console.print(f"  ./main help model {name}")
+
+        if all_docs["operations"]:
+            console.print("\n[cyan]Operations:[/cyan]")
+            for name in all_docs["operations"]:
+                console.print(f"  ./main help operation {name}")
+
+        console.print("\n[cyan]Framework:[/cyan]")
+        for topic in doc_helper.list_framework_docs():
+            console.print(f"  ./main help framework {topic}")
+
+        return
+
+    if not item_name:
+        console.print("[red]Error:[/red] Please provide an item name")
+        console.print(f"\nExample: ./main help {item_type} <name>")
+        raise typer.Exit(1)
+
+    # Get and display documentation
+    doc_content = doc_helper.get_doc(item_type, item_name)
+    if doc_content:
+        console.print(format_doc_output(doc_content))
+    else:
+        console.print(f"[red]Error:[/red] {item_type} '{item_name}' not found")
+        raise typer.Exit(1)
+
+
+def main():
+    """Main CLI entrypoint."""
+    try:
+        app()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted by user[/yellow]")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

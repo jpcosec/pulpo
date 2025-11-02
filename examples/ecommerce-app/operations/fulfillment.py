@@ -20,6 +20,7 @@ class ReserveItemsOutput(BaseModel):
 
 @operation(
     name="orders.fulfillment.reserve_items",
+    category="fulfillment",
     description="Reserve inventory for order (depends on checkout validations)",
     inputs=ReserveItemsInput,
     outputs=ReserveItemsOutput,
@@ -49,6 +50,7 @@ class PickItemsOutput(BaseModel):
 
 @operation(
     name="orders.fulfillment.pick_items",
+    category="fulfillment",
     description="Pick items from warehouse (depends on reservation)",
     inputs=PickItemsInput,
     outputs=PickItemsOutput,
@@ -79,6 +81,7 @@ class PackItemsOutput(BaseModel):
 
 @operation(
     name="orders.fulfillment.pack_items",
+    category="fulfillment",
     description="Pack items for shipping (depends on picking)",
     inputs=PackItemsInput,
     outputs=PackItemsOutput,
@@ -112,6 +115,7 @@ class ShipItemsOutput(BaseModel):
 
 @operation(
     name="orders.fulfillment.ship_items",
+    category="fulfillment",
     description="Ship order to customer (depends on packing)",
     inputs=ShipItemsInput,
     outputs=ShipItemsOutput,

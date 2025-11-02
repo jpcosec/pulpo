@@ -22,6 +22,7 @@ class EvolutionOutput(BaseModel):
 
 @operation(
     name="pokemon.evolution.stage1",
+    category="evolution",
     description="Evolve a Pokemon to its first evolution form",
     inputs=EvolutionInput,
     outputs=EvolutionOutput,
@@ -42,6 +43,7 @@ async def evolve_pokemon_stage1(input_data: EvolutionInput) -> EvolutionOutput:
 
 @operation(
     name="pokemon.evolution.stage2",
+    category="evolution",
     description="Evolve a Pokemon to its second evolution form",
     inputs=EvolutionInput,
     outputs=EvolutionOutput,

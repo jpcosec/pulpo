@@ -18,20 +18,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Common Development Commands
 
-### Quick Start (Local Development)
+### Quick Start (Project-Based)
 ```bash
-make compile      # Generate code from decorators → .run_cache/
-make api          # Start API server locally (requires MongoDB)
-make discover     # Show all @datamodel/@operation without importing
+# For example projects
+cd examples/pokemon-app
+./main init       # Initialize services
+./main compile    # Generate code from decorators → .run_cache/
+./main api        # Start API server locally (requires MongoDB)
+./main up         # Start all services
+./main down       # Stop services
+./main help       # View documentation
 ```
 
-### Docker Development
+### Docker Development (Framework-Level)
 ```bash
-make compile      # Generate code from decorators
+# From project root (for framework development)
+make compile      # Generate code from all projects
 make build        # Build Docker images
-make up           # Start all services (API, UI, MongoDB, Prefect)
+make up           # Start all services
 make health       # Check status of all services
 make down         # Stop services
+```
+
+### Discovery & Documentation
+```bash
+# View available documentation
+pulpo help                      # List all framework topics
+pulpo help datamodel           # View @datamodel decorator docs
+./main help                     # List project models and operations
+./main help model Pokemon      # View Pokemon model documentation
+./main help operation pokemon.battles.execute  # View operation docs
+./main help framework datamodel  # View framework docs from project
 ```
 
 ### Code Quality & Testing

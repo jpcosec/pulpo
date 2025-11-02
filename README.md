@@ -2,11 +2,11 @@
 
 **Version:** 0.6.0 (First iteration toward pip-installable library)
 
-⚠️ **Status**: 🔄 **REFACTORING IN PROGRESS** - Making Pulpo Core a domain-agnostic, importable library
+✅ **Status**: **STABLE v0.6.0** - Domain-agnostic, importable library with main-entrypoint discovery
 
 **A metadata-driven code generation framework for building full-stack applications**
 
-> **What's happening?** The codebase is being refactored to remove all domain-specific code (JobHunter references) and become a true, reusable library. See [`plan_docs/REFACTORING_STATUS.md`](plan_docs/REFACTORING_STATUS.md) for current status and [`plan_docs/GRAPH_DRIVEN_ARCHITECTURE.md`](plan_docs/GRAPH_DRIVEN_ARCHITECTURE.md) for the architectural foundation.
+> **Latest:** Complete refactoring to main-entrypoint based discovery. No file scanning, explicit imports only. See [`docs/CLI_REFACTORING_PLAN.md`](docs/CLI_REFACTORING_PLAN.md) for architecture and [`EXAMPLES_RESTRUCTURE_SUMMARY.md`](EXAMPLES_RESTRUCTURE_SUMMARY.md) for example updates.
 
 ## Overview
 
@@ -34,27 +34,54 @@ The framework uses decorator-based metadata collection and code generation to el
 
 ## Quick Start (3 Commands!)
 
-From the **project root**:
+### Option 1: Run an Example Project
 
 ```bash
-make compile    # Compile: scan decorators → generate code
-make build      # Build: build Docker images
-make up         # Start: run services
+cd examples/pokemon-app     # or todo-app, ecommerce-app
+./main init                 # Initialize services
+./main compile              # Generate code from decorators
+./main up                   # Start API, UI, Database, Prefect
 ```
 
-**Your API, UI, and CLI are ready!**
+**Your API (port 8000), UI (port 3000), and CLI are ready!** See [QUICKSTART.md](examples/pokemon-app/QUICKSTART.md) in each example.
 
-Then for detailed framework development, install locally:
+### Option 2: Create Your Own Project
+
+```bash
+# 1. Install Pulpo Core
+pip install pulpo-core
+
+# 2. Create main.py that imports your models and operations
+cat > main << 'EOF'
+#!/usr/bin/env python
+"""Your project entrypoint."""
+from models.user import User              # Your models
+from operations.process_user import process_user  # Your operations
+from core import CLI
+
+app = CLI()
+if __name__ == "__main__":
+    app.run()
+EOF
+
+chmod +x main
+
+# 3. Generate and run
+./main compile
+./main up
+```
+
+### For Framework Development
 
 ```bash
 # Install with poetry (for development)
 cd core
 poetry install
 
-# Or install with pip
+# Or install with pip (editable)
 pip install -e .
 
-# With workflow support
+# With workflow support (Prefect)
 poetry install -E workflow
 ```
 

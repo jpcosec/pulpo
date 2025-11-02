@@ -23,6 +23,7 @@ class ChargePaymentOutput(BaseModel):
 
 @operation(
     name="payments.processing.charge",
+    category="processing",
     description="Charge customer payment (parallel to fulfillment)",
     inputs=ChargePaymentInput,
     outputs=ChargePaymentOutput,
@@ -54,6 +55,7 @@ class ConfirmPaymentOutput(BaseModel):
 
 @operation(
     name="payments.processing.confirm",
+    category="processing",
     description="Confirm payment was processed (depends on charge)",
     inputs=ConfirmPaymentInput,
     outputs=ConfirmPaymentOutput,
@@ -85,6 +87,7 @@ class VerifyPaymentOutput(BaseModel):
 
 @operation(
     name="payments.reconciliation.verify",
+    category="reconciliation",
     description="Verify payment in reconciliation system (depends on confirmation)",
     inputs=VerifyPaymentInput,
     outputs=VerifyPaymentOutput,

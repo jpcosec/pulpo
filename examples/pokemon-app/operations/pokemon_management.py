@@ -26,6 +26,7 @@ class CatchPokemonOutput(BaseModel):
 @operation(
     name="pokemon.management.catch",
     description="Trainer catches a new Pokemon",
+    category="management",
     inputs=CatchPokemonInput,
     outputs=CatchPokemonOutput,
     models_in=["Trainer"],
@@ -62,6 +63,7 @@ class TrainPokemonOutput(BaseModel):
 @operation(
     name="pokemon.management.train",
     description="Train a Pokemon to increase stats and level",
+    category="management",
     inputs=TrainPokemonInput,
     outputs=TrainPokemonOutput,
     models_in=["Pokemon"],
@@ -101,6 +103,7 @@ class CreateTrainerOutput(BaseModel):
 @operation(
     name="pokemon.management.trainer_create",
     description="Create a new Pokemon trainer",
+    category="management",
     inputs=CreateTrainerInput,
     outputs=CreateTrainerOutput,
     models_in=["Trainer"],

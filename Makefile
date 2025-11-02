@@ -196,15 +196,15 @@ setup-project:
 	@make discover
 
 discover:
-	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH CONFIG_FILE=$(CONFIG_FILE) python3 $(CORE_DIR)/scripts/discover.py
+	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH CONFIG_FILE=$(CONFIG_FILE) python3 $(CORE_DIR)/scripts/discovery_file_scan.py
 
 discover-models:
 	@echo "ℹ️  Use 'make discover' to see all models and operations"
-	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH CONFIG_FILE=$(CONFIG_FILE) python3 $(CORE_DIR)/scripts/discover.py | grep -A 999 "Discovered Models"
+	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH CONFIG_FILE=$(CONFIG_FILE) python3 $(CORE_DIR)/scripts/discovery_file_scan.py | grep -A 999 "Discovered Models"
 
 discover-operations:
 	@echo "ℹ️  Use 'make discover' to see all models and operations"
-	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH CONFIG_FILE=$(CONFIG_FILE) python3 $(CORE_DIR)/scripts/discover.py | grep -A 999 "Discovered Operations"
+	@PYTHONPATH=$(CORE_DIR):$$PYTHONPATH CONFIG_FILE=$(CONFIG_FILE) python3 $(CORE_DIR)/scripts/discovery_file_scan.py | grep -A 999 "Discovered Operations"
 
 # =============================================================================
 # Demo Project

@@ -74,21 +74,53 @@ def models():
 
 
 @app.command()
-def graph():
-    """Generate relationship graphs."""
+def graph(
+    from_scan: bool = typer.Option(
+        False,
+        "--from-scan",
+        help="Generate graphs from file scan (codebase-wide) instead of registries"
+    ),
+):
+    """Generate relationship graphs.
+
+    Default: Uses current registries (from main.py imports).
+    With --from-scan: Scans entire codebase for models/operations.
+    """
     cli = get_cli()
     console.print("[cyan]Generating graphs...[/cyan]")
-    graphs_dir = cli.draw_graphs()
-    console.print(f"[green]✓[/green] Generated graphs in {graphs_dir}")
+    try:
+        if from_scan:
+            console.print("[dim]Scanning codebase for models/operations...[/dim]")
+        graphs_dir = cli.draw_graphs()
+        console.print(f"[green]✓[/green] Generated graphs in {graphs_dir}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
-def flows():
-    """Generate operation flow diagrams."""
+def flows(
+    from_scan: bool = typer.Option(
+        False,
+        "--from-scan",
+        help="Generate flows from file scan (codebase-wide) instead of registries"
+    ),
+):
+    """Generate operation flow diagrams.
+
+    Default: Uses current registries (from main.py imports).
+    With --from-scan: Scans entire codebase for operations.
+    """
     cli = get_cli()
     console.print("[cyan]Generating operation flows...[/cyan]")
-    flows_dir = cli.draw_operationflow()
-    console.print(f"[green]✓[/green] Generated flows in {flows_dir}")
+    try:
+        if from_scan:
+            console.print("[dim]Scanning codebase for operations...[/dim]")
+        flows_dir = cli.draw_operationflow()
+        console.print(f"[green]✓[/green] Generated flows in {flows_dir}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -231,6 +263,45 @@ def ui(
         console.print("[yellow]Frontend not built. Serve frontend_template directory:[/yellow]")
         os.chdir(frontend_dir)
         os.system(f"python -m http.server {port}")
+
+
+@app.command()
+def help(
+    topic: str = typer.Argument(None, help="Topic: 'datamodel', 'operation', 'cli', 'architecture', etc."),
+):
+    """Show documentation about Pulpo framework.
+
+    Usage:
+        pulpo help datamodel          # Show @datamodel decorator docs
+        pulpo help operation          # Show @operation decorator docs
+        pulpo help cli                # Show CLI architecture docs
+        pulpo help architecture       # Show framework architecture
+        pulpo help                    # List available topics
+    """
+    from ..doc_helper import DocHelper, format_doc_output
+
+    doc_helper = DocHelper()
+
+    if not topic:
+        # List available topics
+        console.print("[bold]Available Documentation Topics:[/bold]\n")
+        console.print("[cyan]Framework Documentation:[/cyan]")
+        for t in doc_helper.list_framework_docs():
+            console.print(f"  • pulpo help {t}")
+        console.print()
+        console.print("[dim]Tip: Run from a project directory to see model and operation documentation[/dim]")
+        return
+
+    # Get and display documentation
+    doc_content = doc_helper.get_framework_doc(topic)
+    if doc_content:
+        console.print(format_doc_output(doc_content))
+    else:
+        console.print(f"[red]Error:[/red] Topic '{topic}' not found")
+        console.print("\nAvailable topics:")
+        for t in doc_helper.list_framework_docs():
+            console.print(f"  • {t}")
+        raise typer.Exit(1)
 
 
 def main():

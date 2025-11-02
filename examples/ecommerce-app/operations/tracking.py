@@ -21,6 +21,7 @@ class UpdateCustomerOutput(BaseModel):
 
 @operation(
     name="orders.tracking.update_customer",
+    category="tracking",
     description="Send shipping notification to customer (depends on shipment)",
     inputs=UpdateCustomerInput,
     outputs=UpdateCustomerOutput,
