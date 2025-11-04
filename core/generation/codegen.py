@@ -19,9 +19,9 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
-from .config_manager import ConfigManager
-from .graph_generator import MermaidGraphGenerator
-from .registries import ModelRegistry, OperationRegistry
+from ..config.manager import ConfigManager
+from ..analysis.graphs.graph_generator import MermaidGraphGenerator
+from ..analysis.registries import ModelRegistry, OperationRegistry
 
 
 class CodeGenerator:
@@ -114,7 +114,7 @@ class FastAPIGenerator(CodeGenerator):
             "from fastapi import APIRouter, HTTPException, Query",
             "from typing import Optional",
             "",
-            "from core.registries import ModelRegistry, OperationRegistry",
+            "from core.analysis.registries import ModelRegistry, OperationRegistry",
             "",
         ]
 

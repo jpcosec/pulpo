@@ -17,7 +17,7 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
-from .registries import ModelRegistry, OperationRegistry
+from ..analysis.registries import ModelRegistry, OperationRegistry
 
 
 class CLI:
@@ -282,7 +282,7 @@ class CLI:
             >>> graphs_dir = cli.draw_graphs()
             >>> print(f"Graphs at {graphs_dir}")
         """
-        from .graph_generator import MermaidGraphGenerator
+        from ..analysis.graphs.graph_generator import MermaidGraphGenerator
 
         self.run_cache_dir.mkdir(parents=True, exist_ok=True)
         graphs_dir = self.run_cache_dir / "graphs"
@@ -312,7 +312,7 @@ class CLI:
             >>> cli = CLI()
             >>> graphs_dir = cli.draw_operationflow()
         """
-        from .graph_generator import MermaidGraphGenerator
+        from ..analysis.graphs.graph_generator import MermaidGraphGenerator
 
         self.run_cache_dir.mkdir(parents=True, exist_ok=True)
         graphs_dir = self.run_cache_dir / "graphs"
@@ -468,7 +468,7 @@ Operations: {len(ops)}
 
         # Generate all artifacts
         try:
-            from .codegen import compile_all
+            from ..generation.codegen import compile_all
 
             compile_all()
             if self.verbose:

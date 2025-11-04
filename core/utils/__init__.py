@@ -30,7 +30,7 @@ Example:
 # ==============================================================================
 # Configuration
 # ==============================================================================
-from core.utils.config import (
+from ..config.settings import (
     EnvironmentValidator,
     LogLevelValidator,
     ProductionValidator,
@@ -40,35 +40,6 @@ from core.utils.config import (
     get_settings,
     reload_settings,
     reset_settings,
-)
-
-# ==============================================================================
-# Constants
-# ==============================================================================
-from core.utils.constants import (
-    CACHE_TTL,
-    COLLECTIONS,
-    DATE_FORMATS,
-    DIRECTORIES,
-    HTTP_DEFAULTS,
-    LLM_TEMPERATURES,
-    # Dataclass instances
-    MATCH_SCORES,
-    RATE_LIMITS,
-    TIMEOUTS,
-    VALIDATION_LIMITS,
-    ApplicationStatus,
-    DocumentFormat,
-    ExperienceLevel,
-    JobSource,
-    JobType,
-    # Enums
-    Language,
-    LLMProvider,
-    RemoteOption,
-    get_application_status_display_name,
-    # Utility functions
-    get_job_source_display_name,
 )
 
 # ==============================================================================
@@ -113,7 +84,7 @@ from core.utils.logging import (
 # ==============================================================================
 # User Configuration
 # ==============================================================================
-from core.utils.user_config import (
+from ..config.user_config import (
     ConfigFileHandler,
     UserConfig,
     get_active_user_email,
@@ -204,27 +175,6 @@ __all__ = [
     "validate_phone",
     "validate_german_postal_code",
     "validate_job_title",
-    # Constants
-    "Language",
-    "JobSource",
-    "ApplicationStatus",
-    "DocumentFormat",
-    "JobType",
-    "RemoteOption",
-    "ExperienceLevel",
-    "LLMProvider",
-    "MATCH_SCORES",
-    "RATE_LIMITS",
-    "TIMEOUTS",
-    "DIRECTORIES",
-    "COLLECTIONS",
-    "DATE_FORMATS",
-    "VALIDATION_LIMITS",
-    "LLM_TEMPERATURES",
-    "HTTP_DEFAULTS",
-    "CACHE_TTL",
-    "get_job_source_display_name",
-    "get_application_status_display_name",
     # User Configuration
     "UserConfig",
     "ConfigFileHandler",

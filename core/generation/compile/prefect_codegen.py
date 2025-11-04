@@ -102,7 +102,7 @@ class PrefectCodeGenerator:
             "",
             "import asyncio",
             "from prefect import flow, task",
-            "from core.registries import OperationRegistry",
+            "from core.analysis.registries import OperationRegistry",
         ]
 
         return "\n".join(lines)

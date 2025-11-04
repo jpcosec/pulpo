@@ -32,7 +32,7 @@ import inspect
 from pathlib import Path
 from typing import Optional
 
-from .registries import ModelRegistry, OperationRegistry
+from ..analysis.registries import ModelRegistry, OperationRegistry
 
 
 class DocHelper:
