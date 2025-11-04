@@ -183,7 +183,7 @@ mypy core/
 
 - Python 3.11+
 - MongoDB (for persistence)
-- Optional: Prefect (for workflow orchestration)
+- Prefect 3.0+ (for workflow orchestration)
 
 ## License
 
