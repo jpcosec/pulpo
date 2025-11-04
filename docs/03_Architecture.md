@@ -1,659 +1,352 @@
 # 3. Architecture
 
-## System Architecture
+## Overview
 
-Pulpo Core implements a layered architecture designed to separate concerns and enable multiple surfaces to work from the same metadata.
-
-### The Pulpo Stack
+Pulpo is a **two-phase code generation framework** that transforms decorated Python code into full-stack applications.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│          Surfaces (User Interfaces)                  │
-├───────────────────┬───────────────────┬──────────────┤
-│   REST API        │      CLI          │   React UI   │
-│  (FastAPI)        │    (Typer)        │  (Refine.dev)│
-├─────────────────────────────────────────────────────┤
-│          Core Framework Layer                        │
-├───────────────────────────────────────────────────────┤
-│  Decorators       Registries         Code Generators │
-│  (@datamodel)     (ModelRegistry)    (FastAPI)       │
-│  (@operation)     (OperationRegistry)(CLI)           │
-│                                      (UI)            │
-│                                      (Prefect)       │
-├─────────────────────────────────────────────────────┤
-│          Orchestration & Observability                │
-├───────────────────────────────────────────────────────┤
-│  Prefect Flows    Task Tracking      Hierarchy Parser │
-│  Flow Generator   Event Logging      Data Flow Analyzer│
-├─────────────────────────────────────────────────────┤
-│          Data Layer                                   │
-├───────────────────┬───────────────────┬──────────────┤
-│  Beanie ODM       │   MongoDB         │  Validation  │
-│  (Pydantic)       │   Collections     │  (Pydantic)  │
-└─────────────────────────────────────────────────────┘
+Phase 1: ANALYSIS          Phase 2: GENERATION
+Code → Graph               Graph → Code
+
+@datamodel   ────┐         ┌──── generated_api.py
+@operation   ────┤         │
+                 ▼         ▼
+            [DAG/Graph] ────┼──── generated_frontend/
+                 │          │
+                 └──────────┼──── prefect_flows.py
+                            │
+                            └──── cli/<project>
 ```
 
-### Design Principles
-
-1. **Separation of Concerns** - Each layer has a specific responsibility
-2. **Single Responsibility** - Components do one thing well
-3. **Declarative Over Imperative** - Decorators declare intent, framework handles execution
-4. **Type Safety** - Pydantic validation at all boundaries
-5. **Composability** - Components work together seamlessly
-6. **Extensibility** - Easy to add custom generators or validators
-7. **Non-invasive** - Decorators don't require base classes or mixins
+**Key Principle**: `core/` is the framework (never runs in production). `run_cache/` contains generated code (runs in production).
 
 ---
 
-## Component Breakdown
+## Two-Phase Architecture
 
-### Layer 1: Surfaces (User Interfaces)
+### Phase 1: Analysis (Code → Graph)
+**Location**: `core/analysis/`
 
-The outermost layer where users interact with the system.
+Discovers, validates, and builds directed acyclic graphs from decorated code.
 
-#### REST API (FastAPI)
+```
+core/analysis/
+├── decorators.py          # @datamodel, @operation
+├── registries.py          # ModelRegistry, OperationRegistry
+├── discovery/             # Two discovery methods:
+│   ├── ast_scanner.py     #   - AST-based (static analysis)
+│   └── import_scanner.py  #   - Import-based (runtime)
+├── graphs/                # Graph construction
+│   ├── graph_generator.py #   - Mermaid visualization
+│   └── hierarchy.py       #   - Hierarchy analysis
+├── dataflow/              # Data flow analysis
+│   ├── dataflow.py        #   - Dependency detection
+│   └── sync_async.py      #   - Sync/async analysis
+└── validation/            # Validation & linting
+    ├── linter.py          #   - Anti-pattern detection
+    └── doc_helper.py      #   - Documentation helpers
+```
 
-- **Purpose:** HTTP interface for programmatic access
-- **Responsibilities:**
-  - Handle HTTP requests (GET, POST, PUT, DELETE)
-  - Validate input using Pydantic
-  - Call appropriate operations
-  - Return JSON responses
-  - Provide schema discovery (`/models`, `/operations`)
-- **Generated Artifacts:**
-  - `generated_api.py` containing all routes
-  - Swagger UI at `/docs`
-  - ReDoc at `/redoc`
-- **Automatic Endpoints:**
-  - CRUD for every `@datamodel`: `GET /users`, `POST /users`, `PUT /users/{id}`, `DELETE /users/{id}`
-  - Operations: `POST /operations/{operation_name}`
-  - Discovery: `GET /models`, `GET /operations`
+**Process**:
+1. **Discovery**: Find all `@datamodel` and `@operation` decorators
+2. **Registration**: Capture metadata in registries
+3. **Graph Building**: Construct DAG where:
+   - **Nodes** = `@datamodel` (data entities)
+   - **Edges** = `@operation` (transformations)
+4. **Validation**: Lint for type errors, missing dependencies, cycles
+5. **Visualization**: Generate Mermaid graphs
 
-#### CLI (Typer)
+**Standalone**: Analysis can run independently without generation.
 
-- **Purpose:** Command-line interface for automation and scripts
-- **Responsibilities:**
-  - Parse command-line arguments
-  - Invoke operations
-  - Format output for terminal
-  - Provide help and documentation
-  - Support batch operations
-- **Generated Artifacts:**
-  - Dynamic commands from operations
-  - Help system auto-generated from decorators
-  - Bash completion support
-- **Automatic Commands:**
-  - `./main help` - Show all available commands
-  - `./main ops list` - List operations
-  - `./main ops run {operation}` - Execute operation
-  - `./main compile` - Generate code
-  - `./main up/down` - Manage services
+---
 
-#### React UI (Refine.dev)
+### Phase 2: Generation (Graph → Code)
+**Location**: `core/generation/`
 
-- **Purpose:** Admin interface for data management
-- **Responsibilities:**
-  - Display list views with filtering/sorting
-  - Provide create/edit forms
-  - Show detailed record views
-  - Handle real-time updates
-  - Manage navigation
-- **Generated Artifacts:**
-  - `generated_ui_config.ts` - Configuration for Refine
-  - `generated_frontend/` - Complete React application
-  - Pages for list, create, edit, show
-  - Data provider integration with API
-- **Automatic Pages:**
-  - List pages with pagination and filtering
-  - Create forms with validation
-  - Edit forms with updates
-  - Show pages with related data
+Generates production code from graphs.
 
-### Layer 2: Core Framework
+```
+core/generation/
+├── base.py                # CodeGenerator base class
+├── codegen.py             # Orchestrates all generators
+│
+├── init/                  # INIT phase: Initial setup
+│   ├── cli_generator.py   #   - Generate CLI if not exists
+│   ├── project_init.py    #   - Create .pulpo.yml, configs
+│   └── graph_generator.py #   - Generate graph visualizations
+│
+└── compile/               # COMPILE phase: Full generation
+    ├── api_generator.py   #   - FastAPI routes
+    ├── ui_generator.py    #   - React/Refine UI
+    ├── compiler.py        #   - Workflow compiler
+    └── prefect_codegen.py #   - Prefect flows
+```
 
-The heart of Pulpo where metadata is collected, stored, and used for code generation.
+#### INIT Phase
+**Command**: `./main init`
 
-#### Decorators Module
+**Generates**:
+- CLI executable (if doesn't exist): `run_cache/cli/<project_name>`
+- Configuration: `.pulpo.yml`
+- Graphs: `docs/*.mmd`
 
-**Files:** `decorators.py`
+**Purpose**: First-time project setup.
 
-**Purpose:** Collect metadata from code without changing execution
+#### COMPILE Phase
+**Command**: `./main compile`
 
-**Key Components:**
-- `@datamodel` decorator - Registers Beanie Documents
-- `@operation` decorator - Registers async functions
+**Generates**:
+- **API**: `run_cache/generated_api.py` (FastAPI)
+- **UI**: `run_cache/generated_frontend/` (React/Refine)
+- **Workflows**: `run_cache/prefect_flows.py` (Prefect)
+- **CLI**: `run_cache/cli/<project_name>` (Typer)
+- **Graphs**: `docs/` (Mermaid)
 
-**How it works:**
+**Purpose**: Full code generation from updated models/operations.
+
+---
+
+## Configuration Management
+**Location**: `core/config/`
+
+```
+core/config/
+├── manager.py             # ConfigManager (.pulpo.yml)
+├── settings.py            # Global settings
+└── user_config.py         # User-specific config
+```
+
+**Configuration File**: `.pulpo.yml`
+```yaml
+project_name: my-app
+version: 1.0
+ports:
+  api: 8000
+  ui: 3000
+  mongodb: 27017
+  prefect_server: 4200
+discovery:
+  models_dirs: [models]
+  operations_dirs: [operations]
+```
+
+---
+
+## Services (Operate from `run_cache/`)
+
+The 5 Docker services execute **generated code**, not framework code:
+
+### 1. MongoDB
+- **Port**: 27017
+- **Purpose**: Data persistence
+- **Image**: `mongo:7.0`
+
+### 2. API Server (FastAPI)
+- **Port**: 8000
+- **Runs**: `run_cache/generated_api.py`
+- **Endpoints**:
+  - `/docs` - Swagger UI
+  - `/health` - Health check
+  - `/api/v1/*` - Auto-generated CRUD
+
+### 3. UI (React/Refine)
+- **Port**: 3000
+- **Runs**: `run_cache/generated_frontend/`
+- **Features**: Admin panel with CRUD operations
+
+### 4. Prefect Server
+- **Port**: 4200
+- **Purpose**: Workflow orchestration server
+- **UI**: http://localhost:4200
+
+### 5. Prefect Worker
+- **Runs**: `run_cache/prefect_flows.py`
+- **Purpose**: Execute workflows
+
+---
+
+## Data Flow
+
+### 1. User writes code:
 ```python
-@datamodel(name="User")
-class User(Document):
+# models/user.py
+from core import datamodel
+
+@datamodel
+class User:
     email: str
     name: str
-    # Decorator registers User with ModelRegistry
 ```
 
-The decorator:
-1. Extracts metadata (name, description, fields, types)
-2. Calls `ModelRegistry.register()`
-3. Returns the original class unchanged
-
-#### Registries Module
-
-**Files:** `registries.py`
-
-**Purpose:** Store and provide access to collected metadata
-
-**Key Components:**
-- `ModelRegistry` - Stores all `@datamodel` metadata
-- `OperationRegistry` - Stores all `@operation` metadata
-- `Registry` base class - Common interface
-
-**Responsibilities:**
-- Store metadata in memory
-- Provide query interfaces (get, list, search)
-- Support discovery
-- Enable code generators to access metadata
-- Provide runtime introspection
-
-**How it works:**
 ```python
-# Registration (happens at import time)
-ModelRegistry.register("User", model_metadata)
+# operations/create_user.py
+from core import operation
 
-# Access (happens at code generation time)
-all_models = ModelRegistry.get_all()
-user_model = ModelRegistry.get("User")
+@operation
+async def create_user(email: str, name: str) -> User:
+    user = User(email=email, name=name)
+    await user.save()
+    return user
 ```
 
-#### Code Generators Module
-
-**Files:** `codegen.py`
-
-**Purpose:** Synthesize code from metadata
-
-**Key Generator Classes:**
-- `FastAPIGenerator` - Generates REST API code
-- `CLIGenerator` - Generates CLI commands
-- `RefineConfigGenerator` - Generates React configuration
-- `RefinePageGenerator` - Generates React pages
-- `PrefectCodeGenerator` - Generates Prefect workflows
-
-**How it works:**
-1. Query registries for metadata
-2. Analyze dependencies and relationships
-3. Render Jinja2 templates with metadata
-4. Write generated code to `.run_cache/`
-5. Calculate hashes to detect changes
-
-**Example - FastAPI Generation:**
+### 2. User imports in entrypoint:
 ```python
-generator = FastAPIGenerator()
-api_code = generator.generate()  # Returns Python code
+# main
+from models.user import User
+from operations.create_user import create_user
+from core import CLI
 
-# Generates routes like:
-# @app.post("/users/crud/create")
-# async def create_user(data: UserCreate):
-#     return await User.insert_one(data.dict())
+if __name__ == "__main__":
+    cli = CLI()
+    cli.run()
 ```
 
-### Layer 3: Orchestration & Observability
-
-Handles workflow management and tracking.
-
-#### Prefect Integration
-
-**Files:** `orchestration/compiler.py`, `orchestration/prefect_codegen.py`
-
-**Purpose:** Convert hierarchical operations into Prefect flows
-
-**Key Components:**
-- `HierarchyParser` - Parse dot-notation operation names
-- `DataFlowAnalyzer` - Detect data dependencies
-- `OrchestrationCompiler` - Generate flow structure
-- `PrefectCodeGenerator` - Generate Prefect code
-
-**How it works:**
-```python
-# Operation names define hierarchy
-@operation(name="pipeline.fetch.source_a")  # Level 3
-@operation(name="pipeline.fetch.source_b")  # Level 3 (parallel)
-@operation(name="pipeline.merge")          # Level 2 (depends on ^)
-
-# Generates Prefect @flow:
-@flow
-async def pipeline():
-    source_a = await fetch_source_a()  # Parallel
-    source_b = await fetch_source_b()  # Parallel
-    result = await merge(source_a, source_b)  # Sequential
+### 3. User runs init:
+```bash
+./main init
 ```
+**Output**: CLI created, `.pulpo.yml` created, graphs generated.
 
-#### Observability & Tracking
-
-**Files:** `selfawareness/tracking.py`, `selfawareness/events.py`
-
-**Purpose:** Track execution and provide audit trails
-
-**Key Features:**
-- Operation execution tracking
-- Event logging
-- Audit trails
-- Performance metrics
-- Error tracking
-
-### Layer 4: Data Layer
-
-Handles database operations and validation.
-
-#### Beanie ODM Integration
-
-**Files:** `database.py`
-
-**Purpose:** Async MongoDB integration with type safety
-
-**Key Features:**
-- Async MongoDB driver (Motor)
-- Document mapping (Beanie)
-- Type validation (Pydantic)
-- Query helpers
-- Migration support
-
-**Responsibilities:**
-- Database connection management
-- Document serialization/deserialization
-- Query building
-- Index management
-- Transaction support
-
-#### Validation
-
-**Files:** `utils/validators.py`
-
-**Purpose:** Ensure data integrity
-
-**Key Features:**
-- Input validation via Pydantic models
-- Output validation
-- Custom validators
-- Type checking
-- Error messages
-
----
-
-## Data Flow Lifecycle
-
-Understanding how data flows through the system helps you use Pulpo Core effectively.
-
-### Request Flow (API Example)
-
-```
-User Request
-    ↓
-HTTP POST /operations/checkout.process
-    ↓
-FastAPI Route Handler (Generated)
-    ↓
-Input Validation (Pydantic)
-    ↓
-Call Operation Function
-    ↓
-Prefect Task Wrapping (if enabled)
-    ↓
-Async Operation Logic
-    ↓
-Database Operations (Beanie)
-    ↓
-Output Creation
-    ↓
-Output Validation (Pydantic)
-    ↓
-JSON Response
-    ↓
-HTTP 200 OK + JSON
-```
-
-### CLI Flow (Command Example)
-
-```
-CLI Command: ./main ops run checkout.process --input '...'
-    ↓
-Typer Command Handler
-    ↓
-Argument Parsing
-    ↓
-Operation Discovery (OperationRegistry)
-    ↓
-Input Deserialization
-    ↓
-Input Validation (Pydantic)
-    ↓
-Async Operation Logic
-    ↓
-Database Operations (Beanie)
-    ↓
-Output Formatting
-    ↓
-Terminal Display
-```
-
-### Code Generation Flow
-
-```
+### 4. User runs compile:
+```bash
 ./main compile
-    ↓
-Load Main Entrypoint
-    ↓
-Import Models & Operations
-    ↓
-Decorators Register Metadata
-    ↓
-Registries Populated
-    ↓
-Code Generators Query Registries
-    ↓
-Analyze Dependencies
-    ↓
-Render Templates
-    ↓
-Write to .run_cache/
-    ↓
-Calculate Hashes
-    ↓
-Done - Code Ready
 ```
+**Output**: API, UI, workflows, CLI generated in `run_cache/`.
 
-### Model Creation Flow (Database)
-
+### 5. User runs services:
+```bash
+./main up
 ```
-Pydantic Input Model (from decorator parameters)
-    ↓
-User provides JSON data
-    ↓
-Pydantic validates and deserializes
-    ↓
-Field types checked
-    ↓
-Custom validators run
-    ↓
-Beanie Document created
-    ↓
-MongoDB insert_one()
-    ↓
-Document ID generated
-    ↓
-Success response with ID
-    ↓
-Pydantic Output Model
-    ↓
-JSON response to client
-```
+**Output**: 5 Docker containers running generated code.
 
 ---
 
-## Module Organization
-
-The framework is organized into logical modules with clear responsibilities.
-
-### Core Module Structure
+## Directory Structure
 
 ```
-core/
-├── __init__.py                 # Main exports (datamodel, operation, CLI)
-├── decorators.py               # @datamodel and @operation decorators
-├── registries.py               # ModelRegistry and OperationRegistry
-├── base.py                     # Optional base classes
-├── codegen.py                  # Code generators
-├── api.py                      # FastAPI integration
-├── database.py                 # MongoDB/Beanie setup
+project/
+├── models/                # User's @datamodel classes
+│   ├── __init__.py
+│   └── user.py
+├── operations/            # User's @operation functions
+│   ├── __init__.py
+│   └── create_user.py
+├── .pulpo.yml             # Generated config
+├── main                   # User's entrypoint
 │
-├── cli/                        # CLI Implementation
-│   ├── main.py                # Main CLI app (Typer)
-│   ├── commands/
-│   │   ├── ops.py            # Operation commands
-│   │   ├── compile.py        # Code generation
-│   │   ├── services.py       # Service management
-│   │   └── ...
-│   └── interface.py           # Programmatic CLI interface
+├── run_cache/             # Generated (not in git)
+│   ├── generated_api.py
+│   ├── generated_frontend/
+│   ├── prefect_flows.py
+│   └── cli/<project>
 │
-├── orchestration/              # Prefect Integration
-│   ├── compiler.py            # Generate flow structure
-│   ├── dataflow.py            # Analyze dependencies
-│   ├── hierarchy.py           # Parse operation hierarchy
-│   └── prefect_codegen.py     # Generate Prefect code
-│
-├── selfawareness/              # Observability
-│   ├── tracking.py            # Operation tracking
-│   ├── events.py              # Event system
-│   └── middleware.py          # Request/response logging
-│
-└── utils/                      # Utilities
-    ├── config.py              # Settings management
-    ├── logging.py             # Structured logging
-    ├── exceptions.py          # Custom exceptions
-    └── validators.py          # Validation helpers
+└── docs/                  # Generated graphs
+    ├── models.mmd
+    └── operations.mmd
 ```
 
-### Module Responsibilities
-
-| Module | Purpose | Key Classes |
-|--------|---------|-------------|
-| `decorators` | Metadata collection | `datamodel`, `operation` |
-| `registries` | Metadata storage | `ModelRegistry`, `OperationRegistry` |
-| `codegen` | Code synthesis | `FastAPIGenerator`, `RefineConfigGenerator` |
-| `api` | HTTP interface | `FastAPI` integration, routes |
-| `database` | Data persistence | `Beanie`, `Motor`, `MongoDB` integration |
-| `cli` | Command-line interface | `Typer`, `CLI`, command handlers |
-| `orchestration` | Workflow generation | `HierarchyParser`, `PrefectCodeGenerator` |
-| `selfawareness` | Observability | `TaskTracker`, `EventLogger` |
-| `utils` | Shared utilities | Config, logging, validation, exceptions |
-
----
-
-## Design Patterns
-
-Pulpo Core uses several well-known design patterns to achieve its goals.
-
-### 1. Decorator Pattern
-
-**Problem:** Add metadata to classes without modifying them
-
-**Solution:** Use Python decorators to wrap classes and register metadata
-
-```python
-@datamodel(name="User")
-class User(Document):
-    email: str
-    # Decorator registers metadata, doesn't change class behavior
 ```
-
-### 2. Registry Pattern
-
-**Problem:** Centralize access to all models and operations
-
-**Solution:** Use in-memory registries as single source of truth
-
-```python
-class ModelRegistry:
-    _models = {}  # Central storage
-
-    @classmethod
-    def register(cls, name, model):
-        cls._models[name] = model
-
-    @classmethod
-    def get(cls, name):
-        return cls._models.get(name)
-```
-
-### 3. Code Generation Pattern
-
-**Problem:** Generate boilerplate code from metadata
-
-**Solution:** Use templates and generators to synthesize code
-
-```python
-class FastAPIGenerator:
-    def generate(self) -> str:
-        models = ModelRegistry.get_all()
-        template = load_template('api.jinja2')
-        return template.render(models=models)
-```
-
-### 4. Factory Pattern
-
-**Problem:** Create different types of generators for different outputs
-
-**Solution:** Use factory methods to instantiate appropriate generators
-
-```python
-generators = {
-    'api': FastAPIGenerator(),
-    'cli': CLIGenerator(),
-    'ui': RefineConfigGenerator(),
-    'prefect': PrefectCodeGenerator(),
-}
-```
-
-### 5. Chain of Responsibility
-
-**Problem:** Process requests through multiple handlers
-
-**Solution:** Chain handlers together, each handles part of the request
-
-```
-Request → Validation → Operation Logic → Response Creation → JSON → HTTP
-```
-
-### 6. Strategy Pattern
-
-**Problem:** Handle different operation types (sync vs async, simple vs complex)
-
-**Solution:** Use different strategies based on operation characteristics
-
-```python
-if operation.is_async:
-    strategy = AsyncOperationStrategy()
-else:
-    strategy = SyncOperationStrategy()
-
-strategy.execute(operation, input)
-```
-
-### 7. Adapter Pattern
-
-**Problem:** Work with different backends (FastAPI, Typer, React)
-
-**Solution:** Create adapters that translate between core concepts and backend APIs
-
-```python
-class FastAPIAdapter:
-    def generate_route(operation):
-        # Adapt operation to FastAPI route
-
-class TypierAdapter:
-    def generate_command(operation):
-        # Adapt operation to Typer command
+pulpo/                     # Framework (in git)
+├── core/
+│   ├── analysis/          # Phase 1
+│   ├── generation/        # Phase 2
+│   ├── config/
+│   ├── cli/
+│   ├── utils/
+│   └── selfawareness/
+├── examples/              # Compressed examples
+├── templates/             # Jinja2 templates
+└── README.md
 ```
 
 ---
 
-## Data Models Overview
+## Key Design Principles
 
-The framework works with several types of data throughout its lifecycle:
+### 1. **Framework Never Runs in Production**
+- `core/` generates code
+- `run_cache/` runs in production
+- Clean separation
 
-### Model Metadata
+### 2. **Graph-Based Architecture**
+- All operations analyzed as DAG
+- Validates dependencies
+- Detects cycles
+- Enables parallel execution
 
-Information about a `@datamodel` decorated class:
+### 3. **Two Discovery Methods**
+- **AST Scanner**: Static analysis, no imports
+- **Import Scanner**: Runtime discovery via decorators
 
+### 4. **Hash-Based Regeneration**
+- Only regenerate when models/operations change
+- Fast incremental builds
+- Cached in `.hash` files
+
+### 5. **Declarative Over Imperative**
+- Decorators declare intent
+- Framework handles implementation
+- No boilerplate
+
+### 6. **Type Safety**
+- Pydantic validation everywhere
+- Type hints required
+- Runtime type checking
+
+---
+
+## Extension Points
+
+### Add Custom Generator
 ```python
-ModelInfo = {
-    "name": "User",
-    "description": "A user account",
-    "fields": {
-        "email": {"type": "str", "required": True},
-        "name": {"type": "str", "required": True},
-        "age": {"type": "int", "required": False, "default": 0},
-    },
-    "tags": ["users"],
-    "schema": {...}  # JSON schema
-}
+from core.generation.base import CodeGenerator
+
+class MyGenerator(CodeGenerator):
+    def generate(self) -> Path:
+        # Your generation logic
+        pass
 ```
 
-### Operation Metadata
-
-Information about an `@operation` decorated function:
-
+### Add Custom Discovery
 ```python
-OperationMetadata = {
-    "name": "user.create",
-    "description": "Create a new user",
-    "inputs": {...},      # Pydantic model schema
-    "outputs": {...},     # Pydantic model schema
-    "category": "user-management",
-    "models_in": ["User"],
-    "models_out": [],
-    "function": <async function>,
-}
+from core.analysis.discovery import DiscoveryMethod
+
+class MyDiscovery(DiscoveryMethod):
+    def discover(self, path: Path):
+        # Your discovery logic
+        pass
+```
+
+### Add Custom Validator
+```python
+from core.analysis.validation import Validator
+
+class MyValidator(Validator):
+    def validate(self, registry):
+        # Your validation logic
+        pass
 ```
 
 ---
 
-## Key Architectural Decisions
+## Performance Characteristics
 
-### Decision 1: Pre-Generated Code (Not Runtime)
+- **Discovery**: O(n) where n = number of Python files
+- **Graph Building**: O(v + e) where v = models, e = operations
+- **Generation**: O(n) where n = registry size
+- **Caching**: O(1) hash lookup to detect changes
 
-**Why:** Generated code can be version controlled, type-checked, and deployed reliably
-
-**Trade-off:** Requires running `compile` after model/operation changes
-
-**Benefit:** Production code is identical to what developers review and test
-
-### Decision 2: Metadata-Driven (Not Magic)
-
-**Why:** Makes framework behavior explicit and debuggable
-
-**Trade-off:** More explicit syntax (decorators) needed
-
-**Benefit:** Easy to understand what's happening behind the scenes
-
-### Decision 3: Async-First
-
-**Why:** Enables efficient resource usage and scales better
-
-**Trade-off:** All operations must be `async def`
-
-**Benefit:** Better performance, easier to add concurrent operations
-
-### Decision 4: Main Entrypoint Discovery (Not File Scanning)
-
-**Why:** Explicit imports = clear dependencies and faster discovery
-
-**Trade-off:** Must manually import models/operations in main
-
-**Benefit:** No magic file scanning, clear what's included, pip-installable
-
-### Decision 5: Multiple Surfaces (Not One-Size-Fits-All)
-
-**Why:** Different users need different interfaces (API, CLI, UI)
-
-**Trade-off:** Three surfaces to manage instead of one
-
-**Benefit:** One definition works everywhere, users choose their interface
+**Typical Times** (100 models, 200 operations):
+- Discovery: ~500ms
+- Graph building: ~200ms
+- API generation: ~1s
+- UI generation: ~2s
+- Total compile: ~4s
 
 ---
 
-## Summary
+## Next Steps
 
-Pulpo Core's architecture is designed around:
-
-1. **Metadata Collection** via decorators
-2. **Centralized Storage** in registries
-3. **Code Generation** from templates
-4. **Multiple Surfaces** from one definition
-5. **Type Safety** throughout
-6. **Clear Separation of Concerns** in layered architecture
-
-This enables developers to write business logic once and automatically get API, CLI, UI, and workflows.
-
----
-
-**Next:** Learn how to define decorators in [Decorator Reference](04_Decorator_Reference.md)
+- [Getting Started](01_Getting_Started.md) - Install and run
+- [Core Concepts](02_Core_Concepts.md) - Decorators and registries
+- [Examples](../examples/) - Complete applications
