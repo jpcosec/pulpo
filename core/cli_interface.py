@@ -603,9 +603,18 @@ Operations: {len(ops)}
 
         try:
             import uvicorn
-            from .api import create_app
+            # Import generated API from run_cache
+            run_cache_path = self.run_cache_dir / "generated_api.py"
+            if not run_cache_path.exists():
+                raise FileNotFoundError(
+                    f"Generated API not found at {run_cache_path}. Run compile first."
+                )
 
-            app = create_app()
+            # Add run_cache to path and import
+            import sys
+            sys.path.insert(0, str(self.run_cache_dir))
+            from generated_api import app
+
             uvicorn.run(app, host=host, port=port)
         except ImportError:
             self.console.print(

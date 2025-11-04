@@ -81,6 +81,11 @@ class CodeGenerator:
 class FastAPIGenerator(CodeGenerator):
     """Generate FastAPI routes from ModelRegistry."""
 
+    def __init__(self, output_dir: Path = Path(".run_cache"), project_name: str = "pulpo-app"):
+        """Initialize generator with output directory and project name."""
+        super().__init__(output_dir)
+        self.project_name = project_name
+
     def generate(self) -> Path:
         """Generate FastAPI routes file."""
         output_file = self.output_dir / "generated_api.py"
@@ -308,7 +313,7 @@ def setup_routes():
 
 # Create FastAPI app with all routes
 app = FastAPI(
-    title="JobHunter Core API",
+    title="{self.project_name.title()} API",
     description="Auto-generated API from ModelRegistry",
     version="0.1.0",
 )
@@ -323,7 +328,7 @@ app.include_router(api_router)
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return JSONResponse({{"status": "ok", "service": "jobhunter-api"}})
+    return JSONResponse({{"status": "ok", "service": "{self.project_name}-api"}})
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -331,7 +336,7 @@ async def startup():
     """Initialize MongoDB and Beanie on startup."""
     try:
         mongo_url = os.getenv("MONGODB_URL", "mongodb://mongodb:27017")
-        db_name = os.getenv("MONGODB_DATABASE", "jobhunter")
+        db_name = os.getenv("MONGODB_DATABASE", "{self.project_name}")
 
         # Create Motor async client
         client = AsyncIOMotorClient(mongo_url)
@@ -911,7 +916,7 @@ def _discover_and_import_items(project_dir: Path) -> None:
     import importlib.util
 
     # Load config to get model/operation directories
-    config_path = project_dir / ".jobhunter.yml"
+    config_path = project_dir / ".pulpo.yml"
     if config_path.exists():
         try:
             config_mgr = ConfigManager(config_path)
@@ -1024,7 +1029,7 @@ def compile_all(project_dir: Path | None = None):
     frontend_dir = frontend_gen.generate()
 
     # Read project configuration to get project name
-    config_path = project_dir / ".jobhunter.yml"
+    config_path = project_dir / ".pulpo.yml"
     project_name = "cli"  # Default fallback
     if config_path.exists():
         try:

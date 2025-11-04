@@ -245,7 +245,7 @@ class ConfigManager:
     def get_project_name(self) -> str:
         """Get project name."""
         config = self.load()
-        return config.get("project_name", "jobhunter")
+        return config.get("project_name", "pulpo-app")
 
     def get_version(self) -> str:
         """Get project version."""
