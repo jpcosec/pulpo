@@ -64,28 +64,42 @@ Framework-level event tracking and diagnostics
 
 ## Architecture
 
-Pulpo is organized into three main layers:
+Pulpo follows a **two-phase architecture**:
 
-### Core Layer
-- Data Models (`@datamodel`)
-- Operations (`@operation`)
-- Configuration Management
-- Logging & Error Handling
-- Self-Awareness & Diagnostics
+### Phase 1: Analysis (Code → Graph)
+**Location**: `core/analysis/`
 
-### Building Layer
-- Code Generation (FastAPI, UI, CLI)
-- Data Flow Analysis
-- Orchestration Compilation
-- Validation & Linting
-- Visualization (Mermaid graphs)
+- **Decorators** (`@datamodel`, `@operation`) - Define your data models and operations
+- **Registries** - Automatically capture all decorated classes
+- **Discovery** - AST-based scanning or import-based detection
+- **Graph Generation** - Build directed graphs of data flows
+- **Dataflow Analysis** - Detect dependencies and validate flows
+- **Validation & Linting** - Type checking and anti-pattern detection
 
-### Operation Layer
-- API Service (FastAPI server)
-- Database Service (MongoDB)
-- Prefect Workflows
-- Web UI (React/Refine)
-- CLI Interface
+### Phase 2: Generation (Graph → Code)
+**Location**: `core/generation/`
+
+#### `init` - Initial Setup:
+- Generate CLI executable if it doesn't exist
+- Create configuration files (`.pulpo.yml`)
+- Generate graph visualizations
+
+#### `compile` - Full Code Generation:
+- **API** - FastAPI routes in `run_cache/generated_api.py`
+- **UI** - React/Refine config in `run_cache/generated_frontend/`
+- **Workflows** - Prefect flows in `run_cache/prefect_flows.py`
+- **CLI** - Project-specific CLI commands
+- **Docker** - Container configurations
+
+### Services (Operate from `run_cache/`)
+The 5 Docker services execute **generated code only**:
+1. MongoDB (Database)
+2. API Server (FastAPI)
+3. UI (React/Refine)
+4. Prefect Server
+5. Prefect Worker
+
+**Note**: `core/` is the framework/generator - it never runs in production.
 
 ## Quick Start
 
@@ -196,6 +210,44 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Authors
 
 - Pulpo Team
+
+## Repository Structure
+
+```
+pulpo/
+├── core/                      # Framework code (never runs in production)
+│   ├── analysis/              # Phase 1: Code → Graph
+│   │   ├── decorators.py      # @datamodel, @operation
+│   │   ├── registries.py      # ModelRegistry, OperationRegistry
+│   │   ├── graphs/            # Graph generation & hierarchy
+│   │   ├── dataflow/          # Dataflow analysis
+│   │   └── validation/        # Linting & validation
+│   ├── generation/            # Phase 2: Graph → Code
+│   │   ├── codegen.py         # Main code generator
+│   │   ├── init/              # Init phase (CLI, configs, graphs)
+│   │   └── compile/           # Compile phase (API, UI, workflows)
+│   ├── config/                # Configuration management
+│   ├── cli/                   # Framework CLI
+│   ├── utils/                 # Utilities (logging, exceptions)
+│   └── selfawareness/         # Framework diagnostics
+│
+├── docs/                      # Documentation
+├── examples/                  # Example projects (compressed .tar.gz)
+├── templates/                 # Jinja2 templates for generation
+├── scripts/                   # Helper scripts
+├── tests/                     # Test suite
+└── README.md                  # This file
+```
+
+### Generated Code (Not in Repository)
+```
+run_cache/                     # Generated at compile time
+├── generated_api.py           # FastAPI routes
+├── generated_frontend/        # React/Refine UI
+├── prefect_flows.py           # Prefect workflows
+├── cli/                       # Project CLI
+└── graphs/                    # Mermaid visualizations
+```
 
 ## Project Status
 
