@@ -117,9 +117,9 @@ class UserConfig:
         """Initialize user configuration.
 
         Args:
-            config_dir: Optional custom config directory (default: ~/.jobhunter)
+            config_dir: Optional custom config directory (default: ~/.pulpo)
         """
-        self.config_dir = config_dir or Path.home() / ".jobhunter"
+        self.config_dir = config_dir or Path.home() / ".pulpo"
         self.config_file = self.config_dir / "config.json"
 
         # Initialize file handler
@@ -367,8 +367,8 @@ def require_active_user() -> str:
     user_id = get_active_user_id()
     if user_id is None:
         raise ValueError(
-            "No active user set. Please create a profile with 'jobhunter profile create' "
-            "or switch to an existing user with 'jobhunter profile use <email>'"
+            "No active user set. Please create a profile with 'pulpo profile create' "
+            "or switch to an existing user with 'pulpo profile use <email>'"
         )
     return user_id
 

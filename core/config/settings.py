@@ -118,7 +118,7 @@ class Settings(BaseSettings):
         description="MongoDB connection URI",
     )
     mongodb_database: str = Field(
-        default="jobhunter",
+        default="pulpo",
         description="MongoDB database name",
     )
 

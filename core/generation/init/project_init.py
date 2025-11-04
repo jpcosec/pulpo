@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Initialize a new JobHunter project.
+"""Initialize a new Pulpo project.
 
 Creates project structure with configuration, Makefile, docker-compose.yml,
 and .run_cache directories. Automatically detects available ports.
@@ -52,7 +52,7 @@ from core.config_manager import ConfigManager
 
 
 class ProjectInitializer:
-    """Initialize a JobHunter project."""
+    """Initialize a Pulpo project."""
 
     TEMPLATES = {
         "Makefile": """{makefile_content}""",
@@ -90,13 +90,13 @@ class ProjectInitializer:
         self.port_base = port_base
         self.force = force
         self.dry_run = dry_run
-        self.config_path = self.project_root / ".jobhunter.yml"
+        self.config_path = self.project_root / ".pulpo.yml"
 
     def initialize(self) -> None:
         """Initialize project with config, Makefile, docker-compose."""
         print()
         print("╔════════════════════════════════════════════════════════════════╗")
-        print("║          JobHunter Project Initialization                      ║")
+        print("║          Pulpo Project Initialization                      ║")
         print("╚════════════════════════════════════════════════════════════════╝")
         print()
         print(f"📁 Project directory: {self.project_root}")
@@ -194,7 +194,7 @@ class ProjectInitializer:
             print("✅ Project initialized successfully!")
             print()
             print("📋 Created files:")
-            print("  ├── .jobhunter.yml         (Project configuration)")
+            print("  ├── .pulpo.yml         (Project configuration)")
             print("  ├── .env                   (Environment variables)")
             print("  ├── .gitignore             (Git ignore patterns)")
             print("  ├── Makefile               (Build commands)")
@@ -227,7 +227,7 @@ class ProjectInitializer:
         print()
 
     def _create_config(self) -> None:
-        """Create .jobhunter.yml config file."""
+        """Create .pulpo.yml config file."""
         if self.dry_run:
             print(f"  [DRY RUN] Would create: {self.config_path}")
             config = ConfigManager.create_default_config(
@@ -268,7 +268,7 @@ class ProjectInitializer:
         """Create .env file with project configuration."""
         env_path = self.project_root / ".env"
 
-        content = f"""# JobHunter Project Configuration
+        content = f"""# Pulpo Project Configuration
 PROJECT_NAME={self.project_name}
 IMAGE_VERSION=latest
 
@@ -451,7 +451,7 @@ For more details, see the framework documentation.
             List of existing file paths
         """
         files_to_check = [
-            self.project_root / ".jobhunter.yml",
+            self.project_root / ".pulpo.yml",
             self.project_root / "Makefile",
             self.project_root / "docker-compose.yml",
             self.project_root / ".env",
@@ -541,7 +541,7 @@ For more details, see the framework documentation.
         print()
 
         files_to_clean = [
-            (".jobhunter.yml", "Config file"),
+            (".pulpo.yml", "Config file"),
             ("Makefile", "Makefile"),
             ("docker-compose.yml", "Docker Compose"),
             (".run_cache", ".run_cache/"),
@@ -587,7 +587,7 @@ For more details, see the framework documentation.
         print("ℹ️  Demo examples are provided via tarball only")
         print()
         print("To use the demo project:")
-        print("  1. cd <jobhunter-core-minimal>")
+        print("  1. cd <pulpo-core-minimal>")
         print("  2. make demo  (unpacks test-project-demo/)")
         print("  3. cd test-project-demo")
         print()
@@ -705,12 +705,12 @@ For more details, see the framework documentation.
         abs_core_dir = Path(core_dir).resolve()
 
         content = dedent(f"""\
-            # Auto-generated Makefile for JobHunter project
+            # Auto-generated Makefile for Pulpo project
             # This delegates to {abs_core_dir}/Makefile
 
             CORE_MAKEFILE := {abs_core_dir}/Makefile
             PROJECT_DIR := $(shell pwd)
-            CONFIG_FILE := $(PROJECT_DIR)/.jobhunter.yml
+            CONFIG_FILE := $(PROJECT_DIR)/.pulpo.yml
 
             .PHONY: help setup discover compile build up down logs health where where-all is-up
 

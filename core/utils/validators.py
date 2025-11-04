@@ -1,5 +1,5 @@
 """
-Validation system for the JobHunter AI application.
+Validation system for the Pulpo AI application.
 
 This module provides a clean, object-oriented validation system with
 validator classes, fluent chains, and detailed validation results.

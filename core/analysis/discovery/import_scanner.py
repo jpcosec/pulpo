@@ -19,7 +19,7 @@ def discover_and_import(project_dir: Path) -> tuple[list, list]:
         Tuple of (models, operations) lists from registries
     """
     # Load config to get model/operation directories
-    config_path = project_dir / ".jobhunter.yml"
+    config_path = project_dir / ".pulpo.yml"
     if config_path.exists():
         try:
             from core.config_manager import ConfigManager

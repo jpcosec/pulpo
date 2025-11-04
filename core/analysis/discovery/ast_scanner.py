@@ -99,7 +99,7 @@ def autodiscover(
     """Discover all @datamodel and @operation decorated items.
 
     Args:
-        config_path: Path to .jobhunter.yml directory
+        config_path: Path to .pulpo.yml directory
         models_dirs: List of model directories (relative to config_path)
         operations_dirs: List of operation directories (relative to config_path)
 
@@ -171,7 +171,7 @@ def main() -> None:
         # Import config manager to get discovery paths
         from core.config_manager import ConfigManager
 
-        config_mgr = ConfigManager(config_path / ".jobhunter.yml", project_root=config_path)
+        config_mgr = ConfigManager(config_path / ".pulpo.yml", project_root=config_path)
         config = config_mgr.load()
         models_dirs, ops_dirs = config_mgr.get_discovery_dirs()
 
@@ -180,7 +180,7 @@ def main() -> None:
 
         # Print results
         print(f"🔍 Discovery Results (pwd: {config_path.absolute()})\n")
-        print("📋 Config: .jobhunter.yml")
+        print("📋 Config: .pulpo.yml")
         print(f"   ├─ Models Dir: {', '.join(models_dirs)}")
         print(f"   ├─ Operations Dir: {', '.join(ops_dirs)}")
         print(f"   └─ Ports: {config.get('ports', {})}\n")
@@ -212,7 +212,7 @@ def main() -> None:
             print("\n🖥️  CLI Commands Preview:")
             for op in results["operations"]:
                 params = " ".join([f"--{p} <value>" for p in op["parameters"]])
-                print(f"   $ jobhunter {op['name']} {params}".strip())
+                print(f"   $ pulpo {op['name']} {params}".strip())
 
         print(f"\n✅ Autodiscovery complete! ({len(results['models'])} models, {len(results['operations'])} operations)")
         print("   Next: make compile")
@@ -221,7 +221,7 @@ def main() -> None:
         print("\n" + json.dumps(results, indent=2))
 
     except FileNotFoundError:
-        print("❌ Config file not found: .jobhunter.yml", file=sys.stderr)
+        print("❌ Config file not found: .pulpo.yml", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"❌ Error during autodiscovery: {e}", file=sys.stderr)
