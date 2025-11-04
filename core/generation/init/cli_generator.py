@@ -1,26 +1,19 @@
 #!/usr/bin/env python3
 """Generate a standalone CLI executable from registered operations.
 
-This script is run during `make compile` to create a generated CLI
-that can be used without needing to install the package as a dependency.
+Generates: run_cache/cli/<project_name> (executable)
 
-Generated CLI: .run_cache/cli/jobhunter (executable)
-
-This approach:
-- Avoids runtime imports and dynamic CLI generation
-- Creates a fast, self-contained CLI script
-- Makes CLI available immediately after compilation
-- No need to install the package for CLI access
+This creates a fast, self-contained CLI script with:
+- No runtime dependency on the framework
+- Immediate availability after compilation
+- Auto-generated commands from @operation decorators
 """
 
-import sys
-from pathlib import Path
+from __future__ import annotations
+
 from textwrap import dedent
 
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from core.registries import OperationRegistry
+from ...analysis.registries import OperationRegistry
 
 
 def generate_cli_script() -> str:
