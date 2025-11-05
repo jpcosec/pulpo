@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Initialize a new Pulpo project.
 
-Creates project structure with configuration, Makefile, docker-compose.yml,
+Creates project structure with configuration, docker-compose.yml,
 and .run_cache directories. Automatically detects available ports.
 
 Usage:
@@ -55,7 +55,6 @@ class ProjectInitializer:
     """Initialize a Pulpo project."""
 
     TEMPLATES = {
-        "Makefile": """{makefile_content}""",
         "docker-compose.yml": """{docker_compose_content}""",
     }
 
@@ -93,7 +92,7 @@ class ProjectInitializer:
         self.config_path = self.project_root / ".pulpo.yml"
 
     def initialize(self) -> None:
-        """Initialize project with config, Makefile, docker-compose."""
+        """Initialize project with config and docker-compose."""
         print()
         print("╔════════════════════════════════════════════════════════════════╗")
         print("║          Pulpo Project Initialization                      ║")
@@ -158,9 +157,6 @@ class ProjectInitializer:
         # Create .env
         self._create_env_file()
 
-        # Create Makefile
-        self._create_makefile()
-
         # Create docker-compose
         self._create_docker_compose()
 
@@ -180,7 +176,7 @@ class ProjectInitializer:
         else:
             docs_dir.mkdir(exist_ok=True)
             (docs_dir / "README.md").write_text(
-                "# Architecture Documentation\n\nAuto-generated graphs will appear here after running `make compile`.\n"
+                "# Architecture Documentation\n\nAuto-generated graphs will appear here after running `pulpo compile`.\n"
             )
             print(f"  ✅ Created: {docs_dir}/README.md")
 
@@ -197,7 +193,6 @@ class ProjectInitializer:
             print("  ├── .pulpo.yml         (Project configuration)")
             print("  ├── .env                   (Environment variables)")
             print("  ├── .gitignore             (Git ignore patterns)")
-            print("  ├── Makefile               (Build commands)")
             print("  ├── docker-compose.yml     (Docker configuration)")
             print("  ├── models/                (Data models directory)")
             print("  │   ├── __init__.py")
@@ -214,16 +209,16 @@ class ProjectInitializer:
             print("🚀 Next steps:")
             print("  1. Define your data models in models/")
             print("  2. Define your operations in operations/")
-            print("  3. Run 'make compile' to generate API, UI, and CLI")
-            print("  4. Run 'make build' to build Docker images")
-            print("  5. Run 'make up' to start all services")
+            print("  3. Run 'pulpo compile' to generate API, UI, and CLI")
+            print("  4. Run './main build' to build Docker images")
+            print("  5. Run './main up' to start all services")
             print("  6. Visit:")
             print(f"     • API Docs:  http://localhost:{ports['api']}/docs")
             print(f"     • UI:        http://localhost:{ports['ui']}")
             print(f"     • Prefect:   http://localhost:{ports['prefect_ui']}")
             print()
             print("📚 More help:")
-            print("  make help               - Show all available commands")
+            print("  ./main help             - Show all available commands")
         print()
 
     def _create_config(self) -> None:
@@ -452,32 +447,12 @@ For more details, see the framework documentation.
         """
         files_to_check = [
             self.project_root / ".pulpo.yml",
-            self.project_root / "Makefile",
             self.project_root / "docker-compose.yml",
             self.project_root / ".env",
             self.project_root / ".gitignore",
         ]
 
         return [f for f in files_to_check if f.exists()]
-
-    def _create_makefile(self) -> None:
-        """Create Makefile wrapper."""
-        makefile_path = self.project_root / "Makefile"
-
-        if self.dry_run:
-            print(f"  [DRY RUN] Would create: {makefile_path}")
-            print("  Content: (Makefile wrapper to core framework)")
-            return
-
-        # Find core directory (go up from project root to find core)
-        core_dir = self._find_core_directory()
-        if not core_dir:
-            raise RuntimeError("Could not find core/ directory")
-
-        # Create wrapper Makefile
-        content = self._generate_makefile(core_dir)
-        makefile_path.write_text(content)
-        print(f"  ✅ Created: {makefile_path}")
 
     def _create_docker_compose(self) -> None:
         """Create docker-compose.yml."""
@@ -542,7 +517,6 @@ For more details, see the framework documentation.
 
         files_to_clean = [
             (".pulpo.yml", "Config file"),
-            ("Makefile", "Makefile"),
             ("docker-compose.yml", "Docker Compose"),
             (".run_cache", ".run_cache/"),
         ]
@@ -578,18 +552,18 @@ For more details, see the framework documentation.
         self.initialize()
 
     def add_demo(self) -> None:
-        """Note: Demo examples are now only provided via tarball (make demo).
+        """Note: Demo examples are now only provided via tarball.
 
         core/examples/ was removed - only the tarball Pokemon demo is supported.
-        Run 'make demo' from the framework root to unpack the demo project.
+        Unpack the demo project manually from examples tarball.
         """
         print()
         print("ℹ️  Demo examples are provided via tarball only")
         print()
         print("To use the demo project:")
-        print("  1. cd <pulpo-core-minimal>")
-        print("  2. make demo  (unpacks test-project-demo/)")
-        print("  3. cd test-project-demo")
+        print("  1. Extract the examples tarball")
+        print("  2. cd test-project-demo/")
+        print("  3. pulpo compile && ./main up")
         print()
         print("No examples copied to this project.")
         print()
@@ -601,9 +575,9 @@ For more details, see the framework documentation.
         print()
 
         commands = [
-            ("compile", "make compile"),
-            ("build", "make build"),
-            ("up", "make up"),
+            ("compile", "pulpo compile"),
+            ("build", "./main build"),
+            ("up", "./main up"),
         ]
 
         for name, cmd in commands:
@@ -615,43 +589,6 @@ For more details, see the framework documentation.
             print()
 
         print("✅ Full setup complete!")
-
-    @staticmethod
-    def _find_core_directory() -> Path | None:
-        """Find the core/ directory.
-
-        Search strategies:
-        1. Check JOBHUNTER_CORE environment variable
-        2. Look up from cwd
-        3. Check common locations
-
-        Returns:
-            Path to core directory, or None if not found
-        """
-        import os
-
-        # Strategy 1: Environment variable
-        env_core = os.getenv("JOBHUNTER_CORE")
-        if env_core:
-            core_path = Path(env_core)
-            if (core_path / "core").exists():
-                return core_path
-            if core_path.name == "core" and core_path.exists():
-                return core_path.parent
-
-        # Strategy 2: Look up from cwd
-        current = Path.cwd()
-        for _ in range(15):  # Increase search depth
-            if (current / "core" / "core").exists():
-                return current / "core"
-            current = current.parent
-
-        # Strategy 3: Check absolute path to this script
-        script_dir = Path(__file__).parent.parent
-        if (script_dir / "core").exists():
-            return script_dir
-
-        return None
 
     @staticmethod
     def _prompt_yes_no(message: str) -> bool:
@@ -690,83 +627,6 @@ For more details, see the framework documentation.
             print(f"   ℹ️  Sanitized to: {sanitized}")
 
         return sanitized
-
-    @staticmethod
-    def _generate_makefile(core_dir: Path) -> str:
-        """Generate wrapper Makefile.
-
-        Args:
-            core_dir: Path to core directory
-
-        Returns:
-            Makefile content
-        """
-        # Use absolute path to core directory
-        abs_core_dir = Path(core_dir).resolve()
-
-        content = dedent(f"""\
-            # Auto-generated Makefile for Pulpo project
-            # This delegates to {abs_core_dir}/Makefile
-
-            CORE_MAKEFILE := {abs_core_dir}/Makefile
-            PROJECT_DIR := $(shell pwd)
-            CONFIG_FILE := $(PROJECT_DIR)/.pulpo.yml
-
-            .PHONY: help setup discover compile build up down logs health where where-all is-up
-
-            help:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) help
-
-            setup:
-            \t@python {abs_core_dir}/scripts/init_project.py
-
-            setup-all:
-            \t@python {abs_core_dir}/scripts/init_project.py --all
-
-            setup-reset:
-            \t@python {abs_core_dir}/scripts/init_project.py --reset
-
-            setup-clean:
-            \t@python {abs_core_dir}/scripts/init_project.py --clean
-
-            setup-demo:
-            \t@python {abs_core_dir}/scripts/init_project.py --demo
-
-            discover:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) discover CONFIG_FILE=$(CONFIG_FILE)
-
-            compile:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) compile CONFIG_FILE=$(CONFIG_FILE)
-
-            build:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) build CONFIG_FILE=$(CONFIG_FILE)
-
-            up:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) up CONFIG_FILE=$(CONFIG_FILE)
-
-            down:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) down
-
-            logs:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) logs
-
-            health:
-            \t@python {abs_core_dir}/scripts/service_manager.py health
-
-            where:
-            \t@python {abs_core_dir}/scripts/service_manager.py where $(SERVICE)
-
-            where-all:
-            \t@python {abs_core_dir}/scripts/service_manager.py where-all
-
-            is-up:
-            \t@python {abs_core_dir}/scripts/service_manager.py is-up $(SERVICE)
-
-            %:
-            \t@$(MAKE) -f $(CORE_MAKEFILE) $@ CONFIG_FILE=$(CONFIG_FILE)
-            """)
-
-        return content
 
     @staticmethod
     def _generate_docker_compose(project_name: str, ports: dict) -> str:
