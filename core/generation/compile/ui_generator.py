@@ -94,10 +94,10 @@ class RefinePageGenerator(CodeGenerator):
     """Generate Refine.dev page components from ModelRegistry.
 
     NOTE: This class is used internally by CopyAndGenerateFrontend.
-    All generated files go to .run_cache/generated_frontend/
+    All generated files go to run_cache/generated_frontend/
     """
 
-    def __init__(self, output_dir: Path = Path(".run_cache/generated_frontend/src")):
+    def __init__(self, output_dir: Path = Path("run_cache/generated_frontend/src")):
         """Initialize with generated frontend directory."""
         super().__init__(output_dir)
 
@@ -310,11 +310,11 @@ export {{ {model_name}Edit }} from "./edit";
 class CopyAndGenerateFrontend(CodeGenerator):
     """Copy frontend template and generate complete frontend."""
 
-    def __init__(self, output_dir: Path = Path(".run_cache/generated_frontend")):
+    def __init__(self, output_dir: Path = Path("run_cache/generated_frontend")):
         """Initialize with generated frontend directory."""
         super().__init__(output_dir)
-        # template_dir is at core/frontend_template (sibling of core/core/)
-        self.template_dir = Path(__file__).parent.parent / "frontend_template"
+        # template_dir is at project root/frontend_template
+        self.template_dir = Path(__file__).parent.parent.parent.parent / "frontend_template"
 
     def generate(self) -> Path:
         """Copy template and generate complete frontend."""
@@ -423,7 +423,7 @@ class CopyAndGenerateFrontend(CodeGenerator):
 
     def _copy_ui_config(self):
         """Copy generated UI config to frontend."""
-        source = Path(".run_cache/generated_ui_config.ts")
+        source = Path("run_cache/generated_ui_config.ts")
         dest = self.output_dir / "src" / "config" / "generated.ts"
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -468,7 +468,7 @@ All files in this directory are auto-generated. Changes will be overwritten on n
 ### 1. Install Dependencies (First Time Only)
 
 ```bash
-cd .run_cache/generated_frontend
+cd run_cache/generated_frontend
 npm install
 ```
 

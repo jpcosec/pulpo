@@ -15,7 +15,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from ...registries import OperationRegistry
+from ...analysis.registries import OperationRegistry
 
 # Note: core.examples was removed - only user project operations are available
 # Operations are discovered and imported from user projects via the generated API

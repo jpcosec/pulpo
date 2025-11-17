@@ -2,7 +2,7 @@
 """Initialize a new Pulpo project.
 
 Creates project structure with configuration, docker-compose.yml,
-and .run_cache directories. Automatically detects available ports.
+and run_cache directories. Automatically detects available ports.
 
 Usage:
     python init_project.py [project_name] [options]
@@ -48,7 +48,7 @@ from textwrap import dedent
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.config_manager import ConfigManager
+from core.config.manager import ConfigManager
 
 
 class ProjectInitializer:
@@ -202,7 +202,7 @@ class ProjectInitializer:
             print("  │   └── README.md")
             print("  ├── docs/                  (Documentation)")
             print("  │   └── README.md")
-            print("  └── .run_cache/            (Generated code)")
+            print("  └── run_cache/            (Generated code)")
             print("      ├── generated_api/")
             print("      └── generated_frontend/")
             print()
@@ -291,7 +291,7 @@ ENVIRONMENT=development
         gitignore_path = self.project_root / ".gitignore"
 
         content = """# Generated code
-.run_cache/
+run_cache/
 cli/
 
 # Python
@@ -484,9 +484,9 @@ For more details, see the framework documentation.
         dirs = [
             self.project_root / "models",
             self.project_root / "operations",
-            self.project_root / ".run_cache",
-            self.project_root / ".run_cache" / "generated_api",
-            self.project_root / ".run_cache" / "generated_frontend",
+            self.project_root / "run_cache",
+            self.project_root / "run_cache" / "generated_api",
+            self.project_root / "run_cache" / "generated_frontend",
         ]
 
         if self.dry_run:
@@ -503,7 +503,7 @@ For more details, see the framework documentation.
             if d.name in ("models", "operations"):
                 (d / "__init__.py").write_text('"""Auto-generated package."""\n')
 
-        print("  ✅ Created: directories (models, operations, .run_cache)")
+        print("  ✅ Created: directories (models, operations, run_cache)")
 
     def clean(self, prompt: bool = True) -> None:
         """Clean all project files.
@@ -518,7 +518,7 @@ For more details, see the framework documentation.
         files_to_clean = [
             (".pulpo.yml", "Config file"),
             ("docker-compose.yml", "Docker Compose"),
-            (".run_cache", ".run_cache/"),
+            ("run_cache", "run_cache/"),
         ]
 
         for filename, display_name in files_to_clean:
@@ -692,7 +692,7 @@ For more details, see the framework documentation.
                   - MONGODB_URL=mongodb://mongodb:27017
                   - MONGODB_DATABASE=${{PROJECT_NAME}}
                 volumes:
-                  - ./.run_cache:/app/.run_cache:rw
+                  - ./run_cache:/app/run_cache:rw
                 depends_on:
                   - mongodb
 
@@ -714,7 +714,7 @@ For more details, see the framework documentation.
               ui:
                 container_name: ${{PROJECT_NAME}}-ui
                 build:
-                  context: ./.run_cache/generated_frontend
+                  context: ./run_cache/generated_frontend
                   dockerfile: Dockerfile
                 ports:
                   - "{ui_port}:3000"
@@ -830,6 +830,24 @@ def main():
     else:
         # Default: just initialize
         initializer.initialize()
+
+
+def init_project(project_dir):
+    """Initialize a project directory.
+
+    Args:
+        project_dir: Path to the project directory to initialize
+    """
+    from pathlib import Path
+
+    project_dir = Path(project_dir)
+    initializer = ProjectInitializer(
+        project_name=project_dir.name,
+        port_base=None,
+        force=False,
+        dry_run=False,
+    )
+    initializer.initialize()
 
 
 if __name__ == "__main__":

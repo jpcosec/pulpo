@@ -12,8 +12,8 @@ from .ui_generator import (
     RefinePageGenerator,
     CopyAndGenerateFrontend,
 )
-from .compiler import WorkflowCompiler
-from .prefect_codegen import PrefectFlowGenerator
+from .compiler import OrchestrationCompiler as WorkflowCompiler
+from .prefect_codegen import PrefectCodeGenerator as PrefectFlowGenerator
 
 __all__ = [
     "FastAPIGenerator",

@@ -169,7 +169,7 @@ def main() -> None:
 
     try:
         # Import config manager to get discovery paths
-        from core.config_manager import ConfigManager
+        from core.config.manager import ConfigManager
 
         config_mgr = ConfigManager(config_path / ".pulpo.yml", project_root=config_path)
         config = config_mgr.load()

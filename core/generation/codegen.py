@@ -202,7 +202,7 @@ def compile_all(project_dir: Path | None = None):
     # 4. CLI (moved to init in future)
     print("\n→ Generating CLI...")
     from .init.cli_generator import generate_cli_script
-    cli_dir = Path(".run_cache/cli")
+    cli_dir = Path("run_cache/cli")
     cli_dir.mkdir(parents=True, exist_ok=True)
     cli_file = cli_dir / project_name
 
@@ -225,7 +225,7 @@ def compile_all(project_dir: Path | None = None):
     # 6. Debug: registry.json
     print("\n→ Generating debug files...")
     try:
-        registry_file = Path(".run_cache/registry.json")
+        registry_file = Path("run_cache/registry.json")
         registry_data = {
             "models": [
                 {

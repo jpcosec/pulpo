@@ -16,7 +16,7 @@ from ...analysis.registries import ModelRegistry, OperationRegistry
 class FastAPIGenerator(CodeGenerator):
     """Generate FastAPI routes from ModelRegistry."""
 
-    def __init__(self, output_dir: Path = Path(".run_cache"), project_name: str = "pulpo-app"):
+    def __init__(self, output_dir: Path = Path("run_cache"), project_name: str = "pulpo-app"):
         """Initialize generator with output directory and project name."""
         super().__init__(output_dir)
         self.project_name = project_name

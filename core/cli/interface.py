@@ -473,6 +473,113 @@ Categories: {len(self.list_operations_by_category())}
         if self.verbose:
             self.console.print("[green]✓ Compilation complete[/green]")
 
+    def up(self) -> None:
+        """Start all services (database, API, Prefect, UI).
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.up()
+            # Starts MongoDB, FastAPI, React UI, and Prefect orchestrator
+        """
+        import subprocess
+        from pathlib import Path
+
+        project_dir = Path.cwd()
+
+        # Check if docker-compose.yml exists
+        docker_compose_path = project_dir / "docker-compose.yml"
+        if not docker_compose_path.exists():
+            self.console.print(
+                "[red]✗ docker-compose.yml not found. Run 'pulpo init' first.[/red]"
+            )
+            raise FileNotFoundError("docker-compose.yml not found")
+
+        if self.verbose:
+            self.console.print("[cyan]Starting services...[/cyan]")
+
+        # Start docker-compose
+        try:
+            subprocess.run(
+                ["docker-compose", "up", "-d"],
+                cwd=project_dir,
+                check=True,
+                capture_output=not self.verbose,
+            )
+            if self.verbose:
+                self.console.print("[green]✓ Services started[/green]")
+        except subprocess.CalledProcessError as e:
+            self.console.print(f"[red]✗ Failed to start services: {e}[/red]")
+            raise
+
+    def down(self) -> None:
+        """Stop all services.
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.down()
+            # Stops all running services
+        """
+        import subprocess
+        from pathlib import Path
+
+        project_dir = Path.cwd()
+
+        # Check if docker-compose.yml exists
+        docker_compose_path = project_dir / "docker-compose.yml"
+        if not docker_compose_path.exists():
+            self.console.print(
+                "[red]✗ docker-compose.yml not found. Run 'pulpo init' first.[/red]"
+            )
+            raise FileNotFoundError("docker-compose.yml not found")
+
+        if self.verbose:
+            self.console.print("[cyan]Stopping services...[/cyan]")
+
+        # Stop docker-compose
+        try:
+            subprocess.run(
+                ["docker-compose", "down"],
+                cwd=project_dir,
+                check=True,
+                capture_output=not self.verbose,
+            )
+            if self.verbose:
+                self.console.print("[green]✓ Services stopped[/green]")
+        except subprocess.CalledProcessError as e:
+            self.console.print(f"[red]✗ Failed to stop services: {e}[/red]")
+            raise
+
+    def clean(self) -> None:
+        """Remove generated artifacts (run_cache directory).
+
+        Example:
+            >>> cli = CLI()
+            >>> cli.clean()
+            # Removes all generated code and artifacts
+        """
+        import shutil
+        from pathlib import Path
+
+        project_dir = Path.cwd()
+        run_cache_dir = project_dir / "run_cache"
+
+        if self.verbose:
+            self.console.print("[cyan]Removing generated artifacts...[/cyan]")
+
+        # Remove run_cache directory if it exists
+        if run_cache_dir.exists():
+            try:
+                shutil.rmtree(run_cache_dir)
+                self.console.print(f"[green]✓ Removed {run_cache_dir}[/green]")
+            except Exception as e:
+                self.console.print(f"[red]✗ Failed to remove artifacts: {e}[/red]")
+                raise
+        else:
+            self.console.print("[yellow]⚠ No artifacts to clean[/yellow]")
+
+        if self.verbose:
+            self.console.print("[green]✓ Clean complete[/green]")
+
     # =========================================================================
     # INFO & HELP
     # =========================================================================

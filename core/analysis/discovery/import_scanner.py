@@ -22,7 +22,7 @@ def discover_and_import(project_dir: Path) -> tuple[list, list]:
     config_path = project_dir / ".pulpo.yml"
     if config_path.exists():
         try:
-            from core.config_manager import ConfigManager
+            from core.config.manager import ConfigManager
 
             config_mgr = ConfigManager(config_path, project_root=project_dir)
             config = config_mgr.load()

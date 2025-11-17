@@ -18,7 +18,7 @@ from ..analysis.registries import ModelRegistry, OperationRegistry
 class CodeGenerator:
     """Base class for code generators."""
 
-    def __init__(self, output_dir: Path = Path(".run_cache")):
+    def __init__(self, output_dir: Path = Path("run_cache")):
         """Initialize generator with output directory."""
         self.output_dir = output_dir
         self.output_dir.mkdir(exist_ok=True)

@@ -184,10 +184,10 @@ class ServiceManager:
             print("  ⚠️  docker-compose.yml: Missing")
             warnings.append("docker-compose.yml missing")
 
-        # Check .run_cache
-        run_cache_path = self.config.project_root / ".run_cache"
+        # Check run_cache
+        run_cache_path = self.config.project_root / "run_cache"
         if run_cache_path.exists():
-            print("  ✅ .run_cache/: Exists")
+            print("  ✅ run_cache/: Exists")
             # Check for generated files
             if (run_cache_path / "generated_api.py").exists():
                 print("     ✅ generated_api.py: Present")
@@ -195,8 +195,8 @@ class ServiceManager:
                 print("     ⚠️  generated_api.py: Missing (run 'make compile')")
                 warnings.append("generated_api.py missing")
         else:
-            print("  ⚠️  .run_cache/: Missing (run 'make compile')")
-            warnings.append(".run_cache missing")
+            print("  ⚠️  run_cache/: Missing (run 'make compile')")
+            warnings.append("run_cache missing")
 
         print()
 
@@ -235,7 +235,7 @@ class ServiceManager:
 
         print()
 
-        # Check .run_cache integrity
+        # Check run_cache integrity
         print("━" * 50)
         print("💾 RUN CACHE")
         print("━" * 50)
@@ -248,7 +248,7 @@ class ServiceManager:
                 if not status["valid"]:
                     issues.append(f"{item} corrupted or invalid")
         else:
-            print("  ⚠️  .run_cache/ not found")
+            print("  ⚠️  run_cache/ not found")
 
         print()
 
@@ -319,12 +319,12 @@ class ServiceManager:
 
     @staticmethod
     def _check_run_cache() -> dict[str, dict]:
-        """Check .run_cache/ integrity.
+        """Check run_cache/ integrity.
 
         Returns:
             Dict of cache item statuses
         """
-        cache_dir = Path(".run_cache")
+        cache_dir = Path("run_cache")
         if not cache_dir.exists():
             return {}
 

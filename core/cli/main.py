@@ -8,7 +8,7 @@ import sys
 import typer
 from rich.console import Console
 
-from ..cli_interface import CLI
+from .interface import CLI
 from .commands import lint, ops
 
 app = typer.Typer(

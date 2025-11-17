@@ -476,10 +476,10 @@ For the DataFlow Graph:
 ```
 
 #### Step 5: Writing
-Generated code is written to `.run_cache/` directory:
+Generated code is written to `run_cache/` directory:
 
 ```
-.run_cache/
+run_cache/
 ├── generated_api.py              # FastAPI routes (CRUD + operations)
 ├── generated_flows.py            # Prefect flows based on DataFlow Graph
 ├── generated_ui_config.ts        # React/Refine configuration

@@ -360,7 +360,7 @@ See [19. Troubleshooting & FAQ](19_Troubleshooting_FAQ.md) for common issues and
 ## Key Concepts to Remember
 
 1. **Decorators register metadata** - `@datamodel` and `@operation` don't change execution, just register information
-2. **Code is generated** - Running `./main compile` creates API, CLI, and UI code in `.run_cache/`
+2. **Code is generated** - Running `./main compile` creates API, CLI, and UI code in `run_cache/`
 3. **All operations are async** - Operations must be `async def` functions
 4. **Main entrypoint controls discovery** - Only models and operations imported in `main` are discovered
 5. **Services run independently** - API, UI, and Database run as separate services managed by the CLI

@@ -15,7 +15,7 @@ Architecture:
 from dataclasses import dataclass, field
 from typing import Optional
 
-from .dataflow import DataFlowAnalyzer, DataFlowGraph, OperationMetadata
+from ...analysis.dataflow.dataflow import DataFlowAnalyzer, DataFlowGraph, OperationMetadata
 
 
 @dataclass
