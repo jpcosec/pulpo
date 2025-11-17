@@ -9,9 +9,8 @@ __author__ = "Pulpo Team"
 __license__ = "MIT"
 
 # Main exports for easy import
-from .core.cli_interface import CLI
-from .core.decorators import datamodel, operation
-from .core.registries import ModelRegistry, OperationRegistry
+from core.analysis.decorators import datamodel, operation
+from core.analysis.registries import ModelRegistry, OperationRegistry
 
 __all__ = [
     # Decorators
@@ -20,6 +19,4 @@ __all__ = [
     # Registries
     "ModelRegistry",
     "OperationRegistry",
-    # CLI Interface
-    "CLI",
 ]
