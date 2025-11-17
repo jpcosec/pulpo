@@ -289,7 +289,7 @@ Examples:
   python core/scripts/graph_generator.py
 
   # Generate to specific directory
-  python core/scripts/graph_generator.py --output-dir .run_cache/graphs
+  python core/scripts/graph_generator.py --output-dir run_cache/graphs
 
   # Only operation flow
   python core/scripts/graph_generator.py --flow-only

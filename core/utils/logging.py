@@ -1,7 +1,7 @@
 """
 Structured logging configuration using structlog.
 
-This module provides centralized logging setup for the JobHunter AI application
+This module provides centralized logging setup for the Pulpo AI application
 using a clean, object-oriented design pattern.
 
 Example:
@@ -36,7 +36,7 @@ class LoggerConfig:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         json_logs: If True, output JSON format; if False, use console format
         logger_name: Optional specific logger name to configure
-        app_name: Application name to include in logs (default: "jobhunter")
+        app_name: Application name to include in logs (default: "pulpo")
         use_colors: Enable colored console output (default: True)
         show_exceptions: Include exception formatting (default: True)
     """
@@ -44,7 +44,7 @@ class LoggerConfig:
     level: str = "INFO"
     json_logs: bool = False
     logger_name: str | None = None
-    app_name: str = "jobhunter"
+    app_name: str = "pulpo"
     use_colors: bool = True
     show_exceptions: bool = True
 
@@ -309,7 +309,7 @@ def setup_logging(
     level: str = "INFO",
     json_logs: bool = False,
     logger_name: str | None = None,
-    app_name: str = "jobhunter",
+    app_name: str = "pulpo",
 ) -> None:
     """Configure structured logging for the application.
 

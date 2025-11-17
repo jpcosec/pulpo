@@ -2,7 +2,7 @@
 
 import typer
 
-from ...linter import DataModelLinter
+from ...analysis.validation.linter import DataModelLinter
 
 lint_app = typer.Typer(help="Lint datamodels and operations")
 

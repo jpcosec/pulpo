@@ -140,8 +140,8 @@ show_quickstart() {
     echo "   UI:   http://localhost:3000"
     echo ""
     echo "6. View generated code:"
-    echo "   cat .run_cache/generated_api.py"
-    echo "   cat .run_cache/generated_ui_config.ts"
+    echo "   cat run_cache/generated_api.py"
+    echo "   cat run_cache/generated_ui_config.ts"
     echo ""
 }
 

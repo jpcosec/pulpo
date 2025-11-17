@@ -7,7 +7,7 @@ The generated API includes:
 - Custom endpoints from @operation decorated functions
 - Auto-generated TypeScript types and Refine.dev configuration
 
-Generated files are located in: .run_cache/generated_api/
+Generated files are located in: run_cache/generated_api/
 """
 
 import uvicorn
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print("")
     print("⚠️  Requirements:")
     print("   • MongoDB running on localhost:27017")
-    print("   • Generated API code (.run_cache/generated_api/)")
+    print("   • Generated API code (run_cache/generated_api/)")
     print("   • Python dependencies installed (poetry install)")
     print("")
     print("To start MongoDB:")
@@ -34,9 +34,9 @@ if __name__ == "__main__":
     print("")
 
     uvicorn.run(
-        ".run_cache.generated_api:app",
+        "run_cache.generated_api:app",
         host="0.0.0.0",
         port=8000,
         reload=True,
-        reload_dirs=["core", ".run_cache"],
+        reload_dirs=["core", "run_cache"],
     )

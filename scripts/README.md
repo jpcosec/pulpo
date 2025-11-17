@@ -61,7 +61,7 @@ python core/scripts/autodiscover.py test-project-demo/
 
 All API scripts require:
 - MongoDB running on localhost:27017
-- Generated API code at `.run_cache/generated_api/`
+- Generated API code at `run_cache/generated_api/`
 - Python dependencies installed
 
 ### Available Scripts

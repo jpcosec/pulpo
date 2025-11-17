@@ -1,4 +1,4 @@
-"""Structured logging configuration for JobHunter AI.
+"""Structured logging configuration for Pulpo AI.
 
 This module provides centralized logging configuration with:
 - JSON structured logging for production
@@ -20,7 +20,7 @@ class StructuredLogger:
 
     def __init__(
         self,
-        name: str = "jobhunter",
+        name: str = "pulpo",
         log_dir: str = "logs",
         level: str = "INFO",
         enable_json: bool = True,
@@ -138,7 +138,7 @@ def setup_logging(
         logger.info("Application started", extra={"version": "1.0.0"})
     """
     structured_logger = StructuredLogger(
-        name="jobhunter",
+        name="pulpo",
         log_dir=log_dir,
         level=level,
         enable_json=enable_json,
@@ -151,7 +151,7 @@ def get_logger(name: str) -> logging.Logger:
     """Get a child logger.
 
     Args:
-        name: Logger name (e.g., "jobhunter.scraping")
+        name: Logger name (e.g., "pulpo.scraping")
 
     Returns:
         Logger instance
@@ -160,7 +160,7 @@ def get_logger(name: str) -> logging.Logger:
         logger = get_logger(__name__)
         logger.info("Scraping started")
     """
-    return logging.getLogger(f"jobhunter.{name}")
+    return logging.getLogger(f"pulpo.{name}")
 
 
 # Structured logging helpers

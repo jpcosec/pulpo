@@ -15,7 +15,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from ...registries import OperationRegistry
+from ...analysis.registries import OperationRegistry
 
 # Note: core.examples was removed - only user project operations are available
 # Operations are discovered and imported from user projects via the generated API
@@ -139,9 +139,9 @@ def run_operation(
     """Execute a registered operation.
 
     Examples:
-        jobhunter ops run scrape_jobs --params '{"source": "stepstone", "keywords": "python developer", "limit": 10}'
-        jobhunter ops run list_jobs --params '{"limit": 5}' --json
-        jobhunter ops run get_active_profile --json
+        pulpo ops run scrape_jobs --params '{"source": "stepstone", "keywords": "python developer", "limit": 10}'
+        pulpo ops run list_jobs --params '{"limit": 5}' --json
+        pulpo ops run get_active_profile --json
     """
     op = OperationRegistry.get(operation_name)
 
@@ -222,7 +222,7 @@ def _ensure_db_initialized():
     env_path = Path(".env")
     if not env_path.exists():
         console.print("[yellow]Warning: .env file not found[/yellow]")
-        console.print("[yellow]Run 'jobhunter init' to create configuration[/yellow]")
+        console.print("[yellow]Run 'pulpo init' to create configuration[/yellow]")
         # Continue anyway - operations might not need DB
 
     # Try to initialize database connection

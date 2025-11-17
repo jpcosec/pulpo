@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print("")
 
     uvicorn.run(
-        ".run_cache.generated_api:app",
+        "run_cache.generated_api:app",
         host="0.0.0.0",
         port=8001,
         reload=False,

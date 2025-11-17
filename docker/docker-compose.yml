@@ -35,7 +35,7 @@ services:
       mongodb:
         condition: service_healthy
     volumes:
-      - ../../.run_cache:/app/.run_cache
+      - ../../run_cache:/app/run_cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -92,7 +92,7 @@ services:
         condition: service_healthy
     volumes:
       - ../../core:/app/core
-      - ../../.run_cache:/app/.run_cache
+      - ../../run_cache:/app/run_cache
     working_dir: /app
     command: prefect worker start --pool default
 

@@ -7,7 +7,7 @@
 This directory contains the **template** for the auto-generated frontend.
 
 When you run `make codegen`, this template is:
-1. **Copied** to `.run_cache/generated_frontend/`
+1. **Copied** to `run_cache/generated_frontend/`
 2. **Processed** to replace placeholders with actual model data
 3. **Populated** with generated pages for each model
 
@@ -34,7 +34,7 @@ core/frontend_template/       ← This directory (template)
          ↓
     [Copy entire directory]
          ↓
-.run_cache/generated_frontend/ ← Working frontend
+run_cache/generated_frontend/ ← Working frontend
          ↓
     [Replace placeholders]
          ↓
@@ -51,7 +51,7 @@ To customize the frontend:
 
 1. **Edit template files here** (in `core/frontend_template/`)
 2. **Run** `make codegen` to regenerate
-3. **Do NOT** edit files in `.run_cache/generated_frontend/` (they'll be overwritten)
+3. **Do NOT** edit files in `run_cache/generated_frontend/` (they'll be overwritten)
 
 ## Examples
 
@@ -81,4 +81,4 @@ Edit `src/App.tsx.template` and add routes above `{%ROUTES%}`:
 
 ---
 
-**Remember:** This is a template. The actual working frontend is in `.run_cache/generated_frontend/`.
+**Remember:** This is a template. The actual working frontend is in `run_cache/generated_frontend/`.
