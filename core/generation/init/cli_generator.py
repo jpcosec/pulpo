@@ -305,9 +305,60 @@ def db_init():
 def db_seed():
     """Seed test data."""
     print_header("Database Seeding")
-    print_info("Seeding test data...")
-    # TODO: Implement actual seeding
-    print_info("Seeding not yet implemented")
+
+    # Look for seed files in project
+    seed_dir = Path("seeds")
+    if not seed_dir.exists():
+        print_warning("No seeds/ directory found")
+        print_info("Create seeds/ directory and add Python files with seed data")
+        print_info("Example: seeds/users.py")
+        return
+
+    # Find all Python seed files
+    seed_files = sorted(seed_dir.glob("*.py"))
+    if not seed_files:
+        print_warning("No seed files found in seeds/")
+        return
+
+    print_info(f"Found {{len(seed_files)}} seed file(s)")
+
+    # Import and run seed files
+    import sys
+    sys.path.insert(0, str(Path.cwd()))
+
+    for seed_file in seed_files:
+        if seed_file.name.startswith("_"):
+            continue
+
+        print_info(f"Running: {{seed_file.name}}")
+        try:
+            # Import the seed module
+            module_name = f"seeds.{{seed_file.stem}}"
+            import importlib
+            module = importlib.import_module(module_name)
+
+            # Look for seed() or main() function
+            if hasattr(module, "seed"):
+                import asyncio
+                if asyncio.iscoroutinefunction(module.seed):
+                    asyncio.run(module.seed())
+                else:
+                    module.seed()
+                print_success(f"  ✓ {{seed_file.name}}")
+            elif hasattr(module, "main"):
+                import asyncio
+                if asyncio.iscoroutinefunction(module.main):
+                    asyncio.run(module.main())
+                else:
+                    module.main()
+                print_success(f"  ✓ {{seed_file.name}}")
+            else:
+                print_warning(f"  No seed() or main() function in {{seed_file.name}}")
+
+        except Exception as e:
+            print_error(f"  ✗ Error in {{seed_file.name}}: {{e}}")
+
+    print_success("Seeding complete")
 
 
 def db_backup(filename: Optional[str] = None):
@@ -334,9 +385,33 @@ def db_restore(filename: str):
         print_error(f"Backup not found: {{backup_path}}")
         sys.exit(1)
 
+    print_warning("This will overwrite all data in the database!")
+    response = input("Continue? [y/N] ").strip().lower()
+    if response not in ("y", "yes"):
+        print_info("Restore cancelled")
+        return
+
     print_info(f"Restoring from: {{filename}}")
-    # TODO: Implement actual restore
-    print_info("Restore not yet implemented")
+    try:
+        # Read backup file and pipe to mongorestore
+        with open(backup_path, "rb") as f:
+            import subprocess
+            result = subprocess.run(
+                ["docker-compose", "exec", "-T", "mongodb", "mongorestore", "--archive", "--gzip", "--drop"],
+                stdin=f,
+                capture_output=True,
+                text=True
+            )
+
+            if result.returncode == 0:
+                print_success(f"Database restored from {{filename}}")
+            else:
+                print_error(f"Restore failed: {{result.stderr}}")
+                sys.exit(1)
+
+    except Exception as e:
+        print_error(f"Restore failed: {{e}}")
+        sys.exit(1)
 
 
 def db_shell():

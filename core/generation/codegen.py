@@ -131,9 +131,6 @@ def compile_all(project_dir: Path | None = None):
     operations = OperationRegistry.list_all()
     print(f"📦 Found: {len(models)} models, {len(operations)} operations\n")
 
-    # GENERATION: Run all generators
-    print("🔨 Generating code...\n")
-
     # Get project name from config
     config_path = project_dir / ".pulpo.yml"
     project_name = "pulpo-app"
@@ -144,6 +141,51 @@ def compile_all(project_dir: Path | None = None):
             project_name = config.get("project_name", "pulpo-app")
         except Exception:
             pass
+
+    # BUILD GRAPH: Construct registry graph
+    print("🔗 Building registry graph...")
+    try:
+        from ..analysis.graph_builder import build_graph_from_registries, save_graph_to_project
+
+        graph = build_graph_from_registries(project_name)
+
+        # Validate graph
+        is_valid, errors, warnings = graph.validate()
+
+        if errors:
+            print("\n❌ Graph validation errors:")
+            for error in errors:
+                print(f"  • {error}")
+            print("\nFix these errors before continuing.\n")
+            sys.exit(1)
+
+        if warnings:
+            print("\n⚠️  Graph validation warnings:")
+            for warning in warnings:
+                print(f"  • {warning}")
+            print()
+
+        # Save graph
+        graph_path = save_graph_to_project(graph, project_dir)
+        print(f"   ✅ Graph saved to {graph_path.relative_to(project_dir)}")
+
+        # Show graph stats
+        node_counts = {}
+        for node_id, data in graph.graph.nodes(data=True):
+            node_type = data.get("type", "unknown")
+            node_counts[node_type] = node_counts.get(node_type, 0) + 1
+
+        print(f"   📊 Graph: {len(graph.graph.nodes)} nodes, {len(graph.graph.edges)} edges")
+        for node_type, count in sorted(node_counts.items()):
+            print(f"      • {node_type}: {count}")
+        print()
+
+    except Exception as e:
+        print(f"   ⚠️  Graph building failed: {e}")
+        print("   Continuing without graph...\n")
+
+    # GENERATION: Run all generators
+    print("🔨 Generating code...\n")
 
     # 1. API
     api_gen = FastAPIGenerator(project_name=project_name)

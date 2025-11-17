@@ -285,15 +285,76 @@ class CLI:
             >>> cli = CLI()
             >>> cli.show_flow("create_user")
         """
+        from core.analysis.dataflow.dataflow import DataFlowAnalyzer, OperationMetadata as DFOperationMetadata
+
         operation = self.operation_registry.get(operation_name)
         if not operation:
             raise ValueError(f"Operation '{operation_name}' not found")
 
-        # TODO: Implement dataflow visualization
-        self.console.print(f"[cyan]Data flow for: {operation.name}[/cyan]")
-        self.console.print(f"Input: {operation.input_schema.__name__}")
-        self.console.print(f"Output: {operation.output_schema.__name__}")
-        self.console.print("[yellow]Full flow visualization coming soon...[/yellow]")
+        self.console.print(f"\n[bold cyan]Data Flow Analysis: {operation.name}[/bold cyan]\n")
+
+        # Show basic operation info
+        self.console.print(f"[yellow]Operation Details:[/yellow]")
+        self.console.print(f"  Name:        {operation.name}")
+        self.console.print(f"  Category:    {operation.category}")
+        self.console.print(f"  Input:       {operation.input_schema.__name__}")
+        self.console.print(f"  Output:      {operation.output_schema.__name__}")
+        self.console.print(f"  Async:       {operation.async_enabled}")
+
+        # Show models used
+        if operation.models_in or operation.models_out:
+            self.console.print(f"\n[yellow]Data Models:[/yellow]")
+            if operation.models_in:
+                self.console.print(f"  Reads:       {', '.join(operation.models_in)}")
+            if operation.models_out:
+                self.console.print(f"  Writes:      {', '.join(operation.models_out)}")
+
+        # Analyze dependencies with all operations
+        all_operations = self.operation_registry.list_all()
+        df_operations = [DFOperationMetadata(op) for op in all_operations]
+
+        try:
+            analysis = DataFlowAnalyzer.analyze(df_operations)
+
+            # Show dependencies
+            deps = analysis["dependencies"].get(operation.name, [])
+            if deps:
+                self.console.print(f"\n[yellow]Dependencies (runs after):[/yellow]")
+                for dep in deps:
+                    self.console.print(f"  → {dep}")
+            else:
+                self.console.print(f"\n[yellow]Dependencies:[/yellow] None (can run first)")
+
+            # Show dependents
+            graph = analysis["graph"]
+            dependents = graph.get_dependents(operation.name)
+            if dependents:
+                self.console.print(f"\n[yellow]Dependents (runs before):[/yellow]")
+                for dep in dependents:
+                    self.console.print(f"  → {dep}")
+
+            # Show execution order position
+            exec_order = analysis["execution_order"]
+            if operation.name in exec_order:
+                position = exec_order.index(operation.name) + 1
+                total = len(exec_order)
+                self.console.print(f"\n[yellow]Execution Order:[/yellow] {position} of {total}")
+
+            # Show parallel group
+            parallel_groups = analysis["parallel_groups"]
+            for i, group in enumerate(parallel_groups):
+                if operation.name in group:
+                    if len(group) > 1:
+                        self.console.print(f"\n[yellow]Parallel Group {i}:[/yellow]")
+                        for op_name in group:
+                            marker = "●" if op_name == operation.name else "○"
+                            self.console.print(f"  {marker} {op_name}")
+                    break
+
+        except Exception as e:
+            self.console.print(f"\n[red]Error analyzing data flow: {e}[/red]")
+
+        self.console.print()
 
     def summary(self) -> str:
         """Show summary of discovered models and operations.
