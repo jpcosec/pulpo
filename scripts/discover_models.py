@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from core.config_manager import ConfigManager
-from core.registries import ModelRegistry
+from core.analysis.registries import ModelRegistry
 
 
 def main():

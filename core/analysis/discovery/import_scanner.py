@@ -94,7 +94,7 @@ def discover_and_import(project_dir: Path) -> tuple[list, list]:
     print(f"\n📊 Imported {model_count} model files, {op_count} operation files\n")
 
     # Now read from registries (populated by imports)
-    from core.registries import ModelRegistry, OperationRegistry
+    from core.analysis.registries import ModelRegistry, OperationRegistry
 
     models = ModelRegistry.list_all()
     operations = OperationRegistry.list_all()

@@ -60,7 +60,7 @@ def discover_via_main(main_path: Path) -> tuple[list, list]:
         raise
 
     # Read from registries (populated by imports)
-    from core.registries import ModelRegistry, OperationRegistry
+    from core.analysis.registries import ModelRegistry, OperationRegistry
 
     models = ModelRegistry.list_all()
     operations = OperationRegistry.list_all()

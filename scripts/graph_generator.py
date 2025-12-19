@@ -37,7 +37,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.graph_generator import MermaidGraphGenerator
-from core.registries import ModelRegistry, OperationRegistry
+from core.analysis.registries import ModelRegistry, OperationRegistry
 
 
 def discover_and_register(project_dir: Path | None = None):

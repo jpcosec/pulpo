@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from core import datamodel, operation
-from core.registries import ModelRegistry, OperationRegistry
+from core.analysis.registries import ModelRegistry, OperationRegistry
 
 
 def test_datamodel_decorator_registers_class():

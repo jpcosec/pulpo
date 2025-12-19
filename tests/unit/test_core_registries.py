@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from core.registries import ModelInfo, ModelRegistry, OperationMetadata, OperationRegistry
+from core.analysis.registries import ModelInfo, ModelRegistry, OperationMetadata, OperationRegistry
 
 
 def test_model_registry_register_and_get_and_clear():
